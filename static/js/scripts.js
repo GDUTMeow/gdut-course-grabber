@@ -216,7 +216,7 @@ function login(cookie, positive = true) {
                     const errorMessage = errorData.message || `服务器返回错误状态码: ${response.status}.`;
                     document.getElementById('status').innerText = '🔴 登录出错，请尝试更新 JSESSIONID';
                     if (positive) {
-                        showToast(`登录失败：${errorMessage}`, 'error');
+                        showDialog("错误", `登录失败：${errorMessage}`, 'error');
                     }
                     return false;
                 }).catch(() => {
