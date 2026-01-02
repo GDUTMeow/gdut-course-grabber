@@ -1,6 +1,6 @@
 [project]
 name = "GDUTCourseGrabber"
-version = "3.0.0"
+version = "3.1.0-alpha1"
 description = "广东工业大学（GDUT）抢课助手，发挥计算机的力量，让你抢课解放双手，快人一步"
 authors = [
     {name = "Ricky8955555", email = "rkmiao@duck.com"},
@@ -12,6 +12,7 @@ dependencies = [
     "fastapi[standard]~=0.115.0",
     "httpx~=0.28.0",
     "platformdirs~=4.0",
+    "pywebview>=6.1",
 ]
 requires-python = "==3.12.*"
 readme = "README.md"

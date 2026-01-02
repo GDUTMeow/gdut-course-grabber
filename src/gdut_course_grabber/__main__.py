@@ -8,6 +8,8 @@ import socket
 import webbrowser
 
 import uvicorn
+import webview
+import threading
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
@@ -42,7 +44,16 @@ if __name__ == "__main__":
         url = f"http://localhost:{port}"
 
         logger.info("server running on %s", url)
-        webbrowser.open(url)
+        window = webview.create_window(
+            "GDUTCourseGrabber",
+            url,
+            width=1600,
+            height=900,
+            confirm_close=True,
+            resizable=False,
+        )
 
-        with contextlib.suppress(KeyboardInterrupt):
-            server.run(sockets=[sock4, sock6])
+        server_thread = threading.Thread(target=server.run, args=([sock4, sock6],))
+        server_thread.daemon = True
+        server_thread.start()
+        webview.start()
