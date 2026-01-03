@@ -75,7 +75,7 @@ function toggleSidebar() {
 }
 
 function openGithub() {
-    window.open('https://github.com/GDUTMeow/GDUTCourseGrabber', '_blank');
+    window.open('https://github.com/GDUTMeow/gdut-course-grabber', '_blank');
 }
 
 function openGDUT() {
@@ -231,7 +231,7 @@ function login(cookie, positive = true) {
         .catch(error => {
             document.getElementById('status').innerText = '🔴 登录出错';
             if (positive) {
-                showDialog('错误', `登录失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/GDUTCourseGrabber/issues/new`, 'error');
+                showDialog('错误', `登录失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/gdut-course-grabber/issues/new`, 'error');
             }
             console.error('登录失败:', error);
             return false;
@@ -306,7 +306,7 @@ async function fetchNewCourses(page = 1, size = 20, positive = true) {
             return jsonResponse.data || [];
         })
         .catch(error => {
-            showDialog('错误', `获取课程列表失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/GDUTCourseGrabber/issues/new`, 'error');
+            showDialog('错误', `获取课程列表失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/gdut-course-grabber/issues/new`, 'error');
             console.error('获取课程失败:', error);
             return false;
         })
@@ -807,7 +807,7 @@ async function addTask() {
         }
     }).catch(error => {
         console.error('添加抢课任务失败:', error);
-        showDialog('错误', `添加抢课任务失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/GDUTCourseGrabber/issues/new`, 'error');
+        showDialog('错误', `添加抢课任务失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/gdut-course-grabber/issues/new`, 'error');
     }).finally(() => {
         globalLoading.setAttribute('showed', 'false');
         flushTaskTable();
