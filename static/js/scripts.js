@@ -1292,6 +1292,14 @@ function populateCourseTable(coursesToDisplay) {
     });
 }
 
+function onDelayChange(element) {
+    const value = element.value;
+    if (isNaN(value) || value < 0.5) {
+        element.value = 0.5;
+        showToast('抢课延迟不能小于 0.5 秒，已自动调整为 0.5 秒', 'warning');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initialize();
     changeAccentColor();
