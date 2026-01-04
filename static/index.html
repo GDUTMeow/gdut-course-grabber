@@ -67,8 +67,8 @@
               <div slot="headline" style="margin-top: 16px">关于</div>
               <div slot="text" style="margin-top: 32px; line-height: 2em;">
                 广东工业大学（GDUT）抢课助手，发挥计算机的力量，让你抢课解放双手，快人一步<br>
-                Github: <a href="https://github.com/GDUTMeow/GDUTCourseGrabber" target="_blank"
-                  type="no-decoration">GDUTMeow/GDUTCourseGrabber</a><br>
+                Github: <a href="https://github.com/GDUTMeow/gdut-course-grabber" target="_blank"
+                  type="no-decoration">GDUTMeow/gdut-course-grabber</a><br>
                 以下贡献者不分先后<br>
                 <div style="line-height: 3em;">
                   <a href="https://github.com/GamerNoTitle" type="no-decoration"><s-avatar
@@ -236,7 +236,7 @@
                     保存并登录 </s-button>
                 </div>
                 <p>使用文档：<a
-                    href="https://github.com/GDUTMeow/GDUTCourseGrabber/">https://github.com/GDUTMeow/GDUTCourseGrabber/</a>
+                    href="https://github.com/GDUTMeow/gdut-course-grabber/">https://github.com/GDUTMeow/gdut-course-grabber/</a>
                 </p>
                 <s-divider></s-divider>
                 <div align="center" style="margin-bottom: 16px;">
@@ -312,7 +312,7 @@
                     style="display: grid; width: auto;" onchange="verifyTimeFormat(this.value)">
                     <div slot="text">任务开始的时间，必须按照 YYYY-MM-DD HH:mm:SS 的格式填写，例如 <b>2025-09-01 12:00:00</b></div>
                   </s-text-field>
-                  <s-text-field id="task-delay" label="抢课延迟（秒）" value="0.5" type="number"
+                  <s-text-field id="task-delay" label="抢课延迟（秒）" value="0.5" type="number" onchange="onDelayChange(this)"
                     style="display: grid; width: auto;">
                     <div slot="text">设置每隔多久发送一次抢课请求，越低越快，对电脑的性能要求越高，对服务器的压力越大。</div>
                   </s-text-field>

@@ -75,7 +75,7 @@ function toggleSidebar() {
 }
 
 function openGithub() {
-    window.open('https://github.com/GDUTMeow/GDUTCourseGrabber', '_blank');
+    window.open('https://github.com/GDUTMeow/gdut-course-grabber', '_blank');
 }
 
 function openGDUT() {
@@ -231,7 +231,7 @@ function login(cookie, positive = true) {
         .catch(error => {
             document.getElementById('status').innerText = '🔴 登录出错';
             if (positive) {
-                showDialog('错误', `登录失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/GDUTCourseGrabber/issues/new`, 'error');
+                showDialog('错误', `登录失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/gdut-course-grabber/issues/new`, 'error');
             }
             console.error('登录失败:', error);
             return false;
@@ -306,7 +306,7 @@ async function fetchNewCourses(page = 1, size = 20, positive = true) {
             return jsonResponse.data || [];
         })
         .catch(error => {
-            showDialog('错误', `获取课程列表失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/GDUTCourseGrabber/issues/new`, 'error');
+            showDialog('错误', `获取课程列表失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/gdut-course-grabber/issues/new`, 'error');
             console.error('获取课程失败:', error);
             return false;
         })
@@ -767,12 +767,23 @@ async function addTask() {
         };
     });
 
+    if (document.getElementById('task-delay').value && document.getElementById('task-delay').value < 0.5) {
+        showToast('抢课延迟不能小于 0.5 秒！', 'error');
+        return;
+    }
+    if (!document.getElementById('task-delay').value) {
+        showToast('抢课延迟为空，已使用默认值 0.5 秒');
+    }
+
     const taskData = {
         account: {
             session_id: cookie,
         },
         config: {
-            delay: "PT" + (document.getElementById('task-delay').value || "0.5") + "S",
+            delay: "PT" + (
+                (document.getElementById('task-delay').value && document.getElementById('task-delay').value >= 0.5) ? 
+                document.getElementById('task-delay').value : "0.5"
+            ) + "S",
             retry: document.getElementById('task-auto-retry-switch').checked,
             start_at: startTimeValue ? new Date(startTimeValue).toISOString() : new Date().toISOString(),
         },
@@ -807,7 +818,7 @@ async function addTask() {
         }
     }).catch(error => {
         console.error('添加抢课任务失败:', error);
-        showDialog('错误', `添加抢课任务失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/GDUTCourseGrabber/issues/new`, 'error');
+        showDialog('错误', `添加抢课任务失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/gdut-course-grabber/issues/new`, 'error');
     }).finally(() => {
         globalLoading.setAttribute('showed', 'false');
         flushTaskTable();
@@ -1279,6 +1290,14 @@ function populateCourseTable(coursesToDisplay) {
             course.note
         );
     });
+}
+
+function onDelayChange(element) {
+    const value = element.value;
+    if (isNaN(value) || value < 0.5) {
+        element.value = 0.5;
+        showToast('抢课延迟不能小于 0.5 秒，已自动调整为 0.5 秒');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
