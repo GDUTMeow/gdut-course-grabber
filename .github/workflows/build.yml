@@ -86,7 +86,7 @@ jobs:
           - name: Windows aarch64
             os: windows-11-arm
             cpython_triple: aarch64-pc-windows-msvc
-            artifact_suffix: Windows-x64
+            artifact_suffix: Windows-arm64
             build_method: standard
 
     name: Build for ${{ matrix.name }}
