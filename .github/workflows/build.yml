@@ -46,7 +46,7 @@ jobs:
             cpython_triple: x86_64-unknown-linux-gnu
             artifact_suffix: Linux-x64-gnu
           - name: Linux aarch64 (GNU)
-            os: ubuntu-latest-arm64
+            os: ubuntu-24.04-arm
             cpython_triple: aarch64-unknown-linux-gnu
             artifact_suffix: Linux-arm64-gnu
           - name: macOS x86_64
@@ -62,7 +62,7 @@ jobs:
             cpython_triple: x86_64-pc-windows-msvc
             artifact_suffix: Windows-x64
           - name: Windows aarch64
-            os: windows-latest-arm64
+            os: windows-11-arm
             cpython_triple: aarch64-pc-windows-msvc
             artifact_suffix: Windows-arm64
 
