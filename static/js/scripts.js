@@ -772,7 +772,7 @@ async function addTask() {
         return;
     }
     if (!document.getElementById('task-delay').value) {
-        showToast('抢课延迟为空，已使用默认值 0.5 秒', 'warning');
+        showToast('抢课延迟为空，已使用默认值 0.5 秒');
     }
 
     const taskData = {
@@ -1296,7 +1296,7 @@ function onDelayChange(element) {
     const value = element.value;
     if (isNaN(value) || value < 0.5) {
         element.value = 0.5;
-        showToast('抢课延迟不能小于 0.5 秒，已自动调整为 0.5 秒', 'warning');
+        showToast('抢课延迟不能小于 0.5 秒，已自动调整为 0.5 秒');
     }
 }
 
