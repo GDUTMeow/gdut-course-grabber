@@ -2,8 +2,8 @@
 set -e
 
 CPYTHON_BASE_URL="https://github.com/astral-sh/python-build-standalone/releases/download"
-CPYTHON_BUILD_DATE="20250612"
-CPYTHON_VERSION="3.12.11"
+CPYTHON_BUILD_DATE="20251217"
+CPYTHON_VERSION="3.12.12"
 
 echo "Downloading CPython..."
 curl -sL $CPYTHON_BASE_URL/$CPYTHON_BUILD_DATE/cpython-$CPYTHON_VERSION+$CPYTHON_BUILD_DATE-$CPYTHON_TRIPLE-install_only_stripped.tar.gz | tar xz
