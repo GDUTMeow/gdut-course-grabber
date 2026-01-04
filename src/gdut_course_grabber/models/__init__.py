@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 
 from pydantic import BaseModel, field_validator
+from pydantic_core import PydanticCustomError
 
 
 class CourseSource(IntEnum):
@@ -159,6 +160,13 @@ class GrabberConfig(BaseModel):
             return None
 
         return value.astimezone(timezone.utc)
+
+    @field_validator("delay", mode="after")
+    def validate_delay(cls, value: timedelta) -> timedelta:
+        if value < timedelta():
+            raise PydanticCustomError("negative_delay_error", "delay should be positive or 0.")
+
+        return value
 
 
 class GrabberTask(BaseModel):
