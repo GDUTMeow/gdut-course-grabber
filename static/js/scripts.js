@@ -767,12 +767,23 @@ async function addTask() {
         };
     });
 
+    if (document.getElementById('task-delay').value && document.getElementById('task-delay').value < 0.5) {
+        showToast('抢课延迟不能小于 0.5 秒！', 'error');
+        return;
+    }
+    if (!document.getElementById('task-delay').value) {
+        showToast('抢课延迟为空，已使用默认值 0.5 秒', 'warning');
+    }
+
     const taskData = {
         account: {
             session_id: cookie,
         },
         config: {
-            delay: "PT" + (document.getElementById('task-delay').value || "0.5") + "S",
+            delay: "PT" + (
+                (document.getElementById('task-delay').value && document.getElementById('task-delay').value >= 0.5) ? 
+                document.getElementById('task-delay').value : "0.5"
+            ) + "S",
             retry: document.getElementById('task-auto-retry-switch').checked,
             start_at: startTimeValue ? new Date(startTimeValue).toISOString() : new Date().toISOString(),
         },
