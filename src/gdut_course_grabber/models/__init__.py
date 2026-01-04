@@ -160,6 +160,13 @@ class GrabberConfig(BaseModel):
 
         return value.astimezone(timezone.utc)
 
+    @field_validator("delay", mode="after")
+    def validate_delay(cls, value: timedelta) -> timedelta:
+        if value < timedelta():
+            raise ValueError("delay should be positive or 0.")
+
+        return value
+
 
 class GrabberTask(BaseModel):
     """
