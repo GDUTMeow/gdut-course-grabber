@@ -18,6 +18,7 @@ from gdut_course_grabber.context.path import static_path
 
 @dataclass(frozen=True, kw_only=True)
 class Config:
+    publish: bool = False
     port: int = 0
 
 
@@ -39,17 +40,29 @@ def run(config: Config | None = None) -> None:
     if config is None:
         config = Config()
 
-    with (
-        socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock4,
-        socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as sock6,
-    ):
-        sock4.bind(("127.0.0.1", config.port))
-        sock4.listen()
+    with contextlib.ExitStack() as exit_stack:
+        if config.publish:
+            sock = exit_stack.push(socket.socket(socket.AF_INET6, socket.SOCK_STREAM))
 
-        port = sock4.getsockname()[1]
+            sock.bind(("::", config.port))
+            sock.listen()
 
-        sock6.bind(("::1", port))
-        sock6.listen()
+            port = sock.getsockname()[1]
+
+            socks = [sock]
+        else:
+            sock4 = exit_stack.push(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+            sock6 = exit_stack.push(socket.socket(socket.AF_INET6, socket.SOCK_STREAM))
+
+            sock4.bind(("127.0.0.1", config.port))
+            sock4.listen()
+
+            port = sock4.getsockname()[1]
+
+            sock6.bind(("::1", port))
+            sock6.listen()
+
+            socks = [sock4, sock6]
 
         conf = uvicorn.Config(app, host="localhost", port=port)
         server = uvicorn.Server(config=conf)
@@ -60,4 +73,4 @@ def run(config: Config | None = None) -> None:
         webbrowser.open(url)
 
         with contextlib.suppress(KeyboardInterrupt):
-            server.run(sockets=[sock4, sock6])
+            server.run(sockets=socks)

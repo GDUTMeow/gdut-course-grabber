@@ -13,9 +13,17 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", "-p", help="port to bind", type=int, required=False, default=0)
+    parser.add_argument(
+        "--publish",
+        "-P",
+        help="allow external access",
+        action=argparse.BooleanOptionalAction,
+        required=False,
+        default=False,
+    )
     args = parser.parse_args()
 
-    config = application.Config(port=args.port)
+    config = application.Config(port=args.port, publish=args.publish)
 
     application.run(config)
 
