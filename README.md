@@ -1,5 +1,5 @@
 
-<div style="text-align: center">
+<div align="center">
 <img src="https://assets.bili33.top/img/Github/GDUTCourseGrabber/favicon.png" height="200px">
 <br>
 <h1>GDUTCourseGrabber</h1>
