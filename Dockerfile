@@ -2,9 +2,11 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+RUN pip install --no-cache-dir pdm
+
 COPY . .
+RUN pdm install --prod
 
-RUN pip install --no-cache-dir pdm && \
-    python -m pdm install
+EXPOSE 5000
 
-CMD ["python", "src/gdut_course_grabber/__main__.py"]
+CMD ["pdm", "run", "python", "-m", "gdut_course_grabber", "-P", "-p", "5000"]
