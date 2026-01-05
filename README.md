@@ -1,8 +1,8 @@
 
-<div align="center">
+<div style="text-align: center">
 <img src="https://assets.bili33.top/img/Github/GDUTCourseGrabber/favicon.png" height="200px">
 <br>
-    <h1>GDUTCourseGrabber</h1>
+<h1>GDUTCourseGrabber</h1>
 </div>
 
 ## 快速上手
@@ -12,7 +12,7 @@
 > 程序有以下三种运行方式
 >
 > - **二进制文件运行（推荐！！！）：去 RELEASE 页面下载正确的系统及架构的文件，解压后打开即可**
-> - Docker 运行：`docker run --name gdut-course-grabber --network host gamernotitle/gdut-course-grabber`
+> - Docker 运行：`docker run --name gdut-course-grabber -p 5000:5000 gamernotitle/gdut-course-grabber`
 > - 源码运行：`pip install pdm && pdm sync && python -m gdut_course_grabber`
 
 > [!warning]
@@ -73,7 +73,7 @@
 
 <div align="center">
 
-| <a href="https://github.com/GamerNoTitle" title="GamerNoTitle"><img src="https://avatars.githubusercontent.com/u/28426291?v=4" width="100px;" alt="GamerNoTitle" style="border-radius: 9999px;" /></a> | <a href="https://github.com/ricky8955555" title="ricky8955555"><img src="https://avatars.githubusercontent.com/u/24487646?v=4" width="100px;" alt="ricky8955555" style="border-radius: 9999px;" /></a> | <a href="https://github.com/KeqingMoe" title="KeqingMoe"><img src="https://avatars.githubusercontent.com/u/59642397?v=4" width="100px;" alt="KeqingMoe" style="border-radius: 9999px;" /></a> | <a href="https://github.com/Ron-1337" title="Ron-1337"><img src="https://avatars.githubusercontent.com/u/53028934?v=4" width="100px;" alt="Ron-1337" style="border-radius: 9999px;" /></a> | <a href="https://github.com/Caramel-Tea" title="Caramel-Tea"><img src="https://avatars.githubusercontent.com/u/194370561?v=4" width="100px;" alt="Caramel-Tea" style="border-radius: 9999px;" /></a> |
+| <a href="https://github.com/GamerNoTitle" title="GamerNoTitle"><img src="https://avatars.githubusercontent.com/u/28426291?v=4" width="100px;" alt="GamerNoTitle" style="border-radius: 100%;" /></a> | <a href="https://github.com/ricky8955555" title="ricky8955555"><img src="https://avatars.githubusercontent.com/u/24487646?v=4" width="100px;" alt="ricky8955555" style="border-radius: 100%;" /></a> | <a href="https://github.com/KeqingMoe" title="KeqingMoe"><img src="https://avatars.githubusercontent.com/u/59642397?v=4" width="100px;" alt="KeqingMoe" style="border-radius: 100%;" /></a> | <a href="https://github.com/Ron-1337" title="Ron-1337"><img src="https://avatars.githubusercontent.com/u/53028934?v=4" width="100px;" alt="Ron-1337" style="border-radius: 100%;" /></a> | <a href="https://github.com/Caramel-Tea" title="Caramel-Tea"><img src="https://avatars.githubusercontent.com/u/194370561?v=4" width="100px;" alt="Caramel-Tea" style="border-radius: 100%;" /></a> |
 | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
 |  [GamerNoTitle (Pesy Wu)](https://github.com/GamerNoTitle)   |  [ricky8955555 (Phrinky)](https://github.com/ricky8955555)   |     [KeqingMoe (時雨てる)](https://github.com/KeqingMoe)      |        [Ron-1337 (Ron)](https://github.com/Ron-1337)         | [Caramel-Tea (Caramel Tea)](https://github.com/Caramel-Tea)  |
 
