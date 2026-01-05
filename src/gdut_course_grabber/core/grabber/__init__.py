@@ -142,9 +142,11 @@ class Grabber:
                 except (AuthorizationFailed, RequirementExceeded, VerifyNeeded):
                     raise
                 except (AlreadySelected, CourseIsFull, CourseConflict) as ex:
-                    logger.warning("skipped course %s (%d): %s", course.name, course.id, ex)
+                    logger.warning("skipped course %s (%d): %s", course.name, course.id, repr(ex))
                 except Exception as ex:
-                    logger.warning("grab course %s (%d) failed: %s", course.name, course.id, ex)
+                    logger.warning(
+                        "grab course %s (%d) failed: %s", course.name, course.id, repr(ex)
+                    )
 
                     if not self.config.retry:
                         self._queue.remove(course)
@@ -168,7 +170,7 @@ class Grabber:
             try:
                 await self._select_courses()
             except Exception as ex:
-                logging.error("error occurred, task cancelled: %s", ex)
+                logging.error("error occurred, task cancelled: %s", repr(ex))
                 break
 
         await self.cancel()
