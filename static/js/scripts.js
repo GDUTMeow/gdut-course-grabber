@@ -754,6 +754,8 @@ async function addTask() {
     }
     const cookie = await getData('userSessionId');
 
+    const priorityModeSwitch = document.getElementById('task-priority-mode-switch');
+
     const coursesForPayload = globalCourses.map(course => {
         return {
             id: Number(course.id),
@@ -781,10 +783,13 @@ async function addTask() {
         },
         config: {
             delay: "PT" + (
-                (document.getElementById('task-delay').value && document.getElementById('task-delay').value >= 0.5) ? 
+                (document.getElementById('task-delay').value && document.getElementById('task-delay').value >= 0.5) ?
                 document.getElementById('task-delay').value : "0.5"
             ) + "S",
             retry: document.getElementById('task-auto-retry-switch').checked,
+
+            priority_mode: priorityModeSwitch ? priorityModeSwitch.checked : false,
+
             start_at: startTimeValue ? new Date(startTimeValue).toISOString() : new Date().toISOString(),
         },
         courses: coursesForPayload,
@@ -891,6 +896,8 @@ async function flushTaskTable() {
         const delay = task.value.config.delay;
         const retry = task.value.config.retry ? '开启' : '关闭';
 
+        const priorityMode = task.value.config.priority_mode ? '开启' : '关闭';
+
         let statusValue = await getTaskStatus(taskId);
         let statusText = TASK_STATUS_MAP[statusValue] || "未知";
 
@@ -959,6 +966,10 @@ async function flushTaskTable() {
         delay_td.style.alignContent = 'center';
         delay_td.innerText = delay.replace('PT', '').replace('S', ' 秒');
         table_line.appendChild(delay_td);
+
+        const priority_td = document.createElement('s-td');
+        priority_td.style.alignContent = 'center';
+        table_line.appendChild(priority_td).innerText = priorityMode;
 
         const retry_td = document.createElement('s-td');
         retry_td.style.alignContent = 'center';

@@ -318,6 +318,7 @@
                   </s-text-field>
                 </div>
                 <div align="right">
+                  优先模式 <s-switch style="margin-left: 8px; margin-right: 16px;" id="task-priority-mode-switch"></s-switch>
                   自动重试 <s-switch checked="true" style="margin-left: 8px;" id="task-auto-retry-switch"></s-switch>
                   <s-button id="add-task-btn" onclick="addTask()" style="margin-left: 8px;">
                     <s-circular-progress indeterminate="true" class="hidden"
@@ -358,6 +359,7 @@
                       <s-th>已选课程</s-th>
                       <s-th>启动时间</s-th>
                       <s-th>延迟</s-th>
+                      <s-th>优先模式</s-th>
                       <s-th>自动重试</s-th>
                       <s-th>状态</s-th>
                       <s-th>操作</s-th>
