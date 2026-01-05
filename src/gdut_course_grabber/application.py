@@ -3,10 +3,10 @@ GDUTCourseGrabber 应用。
 """
 
 import contextlib
-from dataclasses import dataclass
 import logging
 import socket
 import webbrowser
+from dataclasses import dataclass
 
 import uvicorn
 from fastapi import FastAPI
