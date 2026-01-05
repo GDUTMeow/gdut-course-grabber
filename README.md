@@ -15,6 +15,10 @@
 > - Docker 运行：`docker run --name gdut-course-grabber --network host gamernotitle/gdut-course-grabber`
 > - 源码运行：`pip install pdm && pdm sync && python -m gdut_course_grabber`
 
+> [!warning]
+>
+> **在完成下面的所有配置后，不要再刷新/重新登录教务系统，会导致原来的 JSESSIONID 失效，请求未授权；也不要过早地添加任务，JSESSIONID 会过期！**
+
 首先，我们先访问教务系统
 
 [广东工业大学教学管理系统](https://jxfw.gdut.edu.cn/)
