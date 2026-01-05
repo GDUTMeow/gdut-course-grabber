@@ -153,6 +153,12 @@ class GrabberConfig(BaseModel):
     是否在抢课失败后自动重试。
     """
 
+    priority_mode: bool = False
+    """
+    是否开启优先模式。
+    若开启，将按照列表顺序抢课。即：只有当第一门课抢成功或被移除后，才会尝试抢第二门课。
+    """
+
     @field_validator("start_at", mode="after")
     @classmethod
     def convert_start_at_to_utc(cls, value: datetime | None) -> datetime | None:
