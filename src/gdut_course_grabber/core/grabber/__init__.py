@@ -136,31 +136,39 @@ class Grabber:
 
         async with EasClient(self.account) as client:
             for course in self._queue.copy():
-                should_remove = True
+                completed = True
 
                 try:
                     await client.select_course(course)
-                    logger.info("grab course %s (%d) successfully.", course.name, course.id)
+                    logger.info(
+                        "grab course %s (%d) successfully.", course.name, course.id
+                    )
 
                 except (AuthorizationFailed, RequirementExceeded, VerifyNeeded):
                     raise
 
                 except (AlreadySelected, CourseIsFull, CourseConflict) as ex:
-                    logger.warning("skipped course %s (%d): %s", course.name, course.id, repr(ex))
+                    logger.warning(
+                        "skipped course %s (%d): %s", course.name, course.id, repr(ex)
+                    )
+
                 except Exception as ex:
                     logger.warning(
-                        "grab course %s (%d) failed: %s", course.name, course.id, repr(ex)
+                        "grab course %s (%d) failed: %s",
+                        course.name,
+                        course.id,
+                        repr(ex),
                     )
 
                     if self.config.retry:
-                        should_remove = False
+                        completed = False
                 finally:
                     await asyncio.sleep(self.config.delay.total_seconds())
 
-                if should_remove and course in self._queue:
+                if completed:
                     self._queue.remove(course)
 
-                if self.config.priority_mode and self._queue:
+                if self.config.priority_mode:
                     break
 
     async def _worker(self) -> None:

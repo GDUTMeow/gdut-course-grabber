@@ -787,9 +787,7 @@ async function addTask() {
                 document.getElementById('task-delay').value : "0.5"
             ) + "S",
             retry: document.getElementById('task-auto-retry-switch').checked,
-
             priority_mode: priorityModeSwitch ? priorityModeSwitch.checked : false,
-
             start_at: startTimeValue ? new Date(startTimeValue).toISOString() : new Date().toISOString(),
         },
         courses: coursesForPayload,
