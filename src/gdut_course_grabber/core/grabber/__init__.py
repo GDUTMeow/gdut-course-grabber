@@ -162,6 +162,7 @@ class Grabber:
 
                     if self.config.retry:
                         completed = False
+
                 finally:
                     await asyncio.sleep(self.config.delay.total_seconds())
 
