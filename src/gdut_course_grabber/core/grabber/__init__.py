@@ -140,24 +140,17 @@ class Grabber:
 
                 try:
                     await client.select_course(course)
-                    logger.info(
-                        "grab course %s (%d) successfully.", course.name, course.id
-                    )
+                    logger.info("grab course %s (%d) successfully.", course.name, course.id)
 
                 except (AuthorizationFailed, RequirementExceeded, VerifyNeeded):
                     raise
 
                 except (AlreadySelected, CourseIsFull, CourseConflict) as ex:
-                    logger.warning(
-                        "skipped course %s (%d): %s", course.name, course.id, repr(ex)
-                    )
+                    logger.warning("skipped course %s (%d): %s", course.name, course.id, repr(ex))
 
                 except Exception as ex:
                     logger.warning(
-                        "grab course %s (%d) failed: %s",
-                        course.name,
-                        course.id,
-                        repr(ex),
+                        "grab course %s (%d) failed: %s", course.name, course.id, repr(ex)
                     )
 
                     if self.config.retry:
