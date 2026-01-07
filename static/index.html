@@ -85,6 +85,9 @@
                   <a href="https://github.com/Caramel-Tea" type="no-decoration"><s-avatar
                       src="https://avatars.githubusercontent.com/u/194370561"></s-avatar> Caramel-Tea (Caramel
                     Tea)</a><br>
+                  以下为社区贡献者<br>
+                  <a href="https://github.com/molqzone" type="no-decoration"><s-avatar
+                      src="https://avatars.githubusercontent.com/u/195118620" height="16px" width="16px"></s-avatar></a>
                 </div>
               </div>
               <s-button type="text" slot="action"> 关闭 </s-button>
@@ -148,7 +151,6 @@
       </s-appbar>
 
       <s-linear-progress indeterminate="true" id="global-loading" class="hidden"></s-linear-progress>
-      <!-- MODIFIED LINE BELOW -->
       <s-scroll-view style="flex-grow: 1; padding-top: 70px;">
         <main style="height: 100%; justify-content: center; align-items: center;">
           <s-dialog showed="false" id="dialog">
@@ -318,6 +320,15 @@
                   </s-text-field>
                 </div>
                 <div align="right">
+                  优先模式 <s-tooltip><s-icon slot="trigger" style="height: 20px; width: 20px;">
+                      <svg t="1767784413616" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                        xmlns="http://www.w3.org/2000/svg" p-id="7421" width="200" height="200">
+                        <path
+                          d="M920.952 337.345c-22.474-53.132-54.639-100.843-95.604-141.807-40.964-40.964-88.675-73.13-141.807-95.603C628.517 76.661 570.083 64.86 509.866 64.86c-60.217 0-118.65 11.801-173.676 35.075-53.132 22.473-100.843 54.639-141.807 95.603-40.964 40.964-73.13 88.675-95.603 141.807-23.274 55.026-35.075 113.458-35.075 173.676s11.801 118.65 35.075 173.676c22.473 53.132 54.639 100.843 95.603 141.807 40.964 40.965 88.675 73.13 141.807 95.604 55.026 23.273 113.458 35.074 173.676 35.074 60.217 0 118.65-11.801 173.676-35.074 53.132-22.474 100.843-54.639 141.807-95.604 40.965-40.964 73.13-88.675 95.604-141.807 23.273-55.026 35.074-113.459 35.074-173.676s-11.801-118.65-35.075-173.676zM552.268 827.936c-12.134 10.795-26.157 16.178-42.063 16.178-16.45 0-30.805-5.324-43.078-15.972-12.266-10.648-18.399-25.547-18.399-44.681 0-17.002 5.927-31.283 17.796-42.887 11.862-11.589 26.422-17.384 43.681-17.384 16.987 0 31.275 5.795 42.872 17.384 11.589 11.604 17.392 25.885 17.392 42.887-0.001 18.87-6.068 33.695-18.201 44.475z m151.059-374.509c-9.295 17.252-20.355 32.15-33.165 44.681-12.803 12.545-35.791 33.636-68.956 63.301-9.17 8.354-16.516 15.708-22.039 22.046-5.53 6.339-9.648 12.134-12.34 17.384-2.699 5.265-4.787 10.516-6.265 15.781-1.485 5.251-3.714 14.487-6.677 27.709-5.125 28.032-21.171 42.063-48.13 42.063-14.024 0-25.819-4.589-35.393-13.766-9.567-9.163-14.354-22.782-14.354-40.842 0-22.649 3.5-42.269 10.516-58.844 7.008-16.59 16.311-31.15 27.907-43.681 11.589-12.545 27.231-27.444 46.917-44.696 17.252-15.105 29.731-26.488 37.408-34.18a115.268 115.268 0 0 0 19.414-25.679c5.265-9.442 7.891-19.678 7.891-30.738 0-21.576-8.023-39.769-24.069-54.609-16.038-14.825-36.739-22.238-62.08-22.238-29.665 0-51.505 7.486-65.522 22.443-14.023 14.972-25.885 37.004-35.592 66.125-9.17 30.474-26.562 45.711-52.174 45.711-15.104 0-27.841-5.324-38.217-15.972-10.383-10.648-15.575-22.179-15.575-34.592 0-25.606 8.221-51.564 24.672-77.846 16.443-26.297 40.445-48.064 71.993-65.316 31.547-17.266 68.353-25.885 110.416-25.885 39.092 0 73.611 7.207 103.54 21.635s53.05 34.033 69.36 58.844c16.318 24.811 24.473 51.77 24.473 80.891-0.001 22.913-4.649 43.003-13.959 60.27z"
+                          p-id="7422"></path>
+                      </svg>
+                    </s-icon> 开启后，将进行单课循环抢课，否则进行列表循环抢课 </s-tooltip>
+                  <s-switch style="margin-left: 8px; margin-right: 16px;" id="task-priority-mode-switch"></s-switch>
                   自动重试 <s-switch checked="true" style="margin-left: 8px;" id="task-auto-retry-switch"></s-switch>
                   <s-button id="add-task-btn" onclick="addTask()" style="margin-left: 8px;">
                     <s-circular-progress indeterminate="true" class="hidden"
@@ -325,7 +336,9 @@
                     添加任务
                   </s-button>
                 </div>
-                <s-alert style="margin: 16px 0 16px 0; font-weight: bold;" type="warning">在完成上面的所有配置后，不要再刷新/重新登录教务系统，会导致原来的 JSESSIONID 失效，请求未授权；也不要过早地添加任务，JSESSIONID 会过期！</s-alert>
+                <s-alert style="margin: 16px 0 16px 0; font-weight: bold;"
+                  type="warning">在完成上面的所有配置后，不要再刷新/重新登录教务系统，会导致原来的 JSESSIONID 失效，请求未授权；也不要过早地添加任务，JSESSIONID
+                  会过期！</s-alert>
               </div>
             </s-card>
           </div>
@@ -346,7 +359,9 @@
                   <s-button onclick="toggleAutoRefreshTaskTable()" type="filled-tonal"
                     style="margin-right: 8px;"><s-circular-progress indeterminate="true"
                       id="task-table-auto-refresh-animation" class="hidden"></s-circular-progress> 切换自动刷新 </s-button>
-                  <s-button onclick="flushTaskTable()" type="outlined" id="flush-task-table-btn"><s-circular-progress indeterminate="true" id="flush-task-table-indicator" class="hidden"></s-circular-progress> 刷新任务列表 </s-button>
+                  <s-button onclick="flushTaskTable()" type="outlined" id="flush-task-table-btn"><s-circular-progress
+                      indeterminate="true" id="flush-task-table-indicator" class="hidden"></s-circular-progress> 刷新任务列表
+                  </s-button>
                 </div>
                 <s-linear-progress id="task-table-auto-refresh-indicator" class="hidden"
                   style="margin-top: 8px; margin-bottom: 8px;" animated="true"></s-linear-progress>
@@ -358,6 +373,7 @@
                       <s-th>已选课程</s-th>
                       <s-th>启动时间</s-th>
                       <s-th>延迟</s-th>
+                      <s-th>优先模式</s-th>
                       <s-th>自动重试</s-th>
                       <s-th>状态</s-th>
                       <s-th>操作</s-th>
@@ -383,8 +399,7 @@
           style="width: 100%; height: 40px; border: none; border-radius: 8px; cursor: pointer;"
           oninput="changeAccentColor(this.value)">
         <div align="right" style="margin-top: 8px;">
-          <s-button slot="action" type="text"
-            onclick="changeAccentColor('#7746ac')">恢复</s-button>
+          <s-button slot="action" type="text" onclick="changeAccentColor('#7746ac')">恢复</s-button>
           <s-button slot="action" type="text"
             onclick="document.getElementById('color-palette-dialog').removeAttribute('showed')">关闭</s-button>
         </div>

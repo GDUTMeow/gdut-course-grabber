@@ -69,7 +69,26 @@
 
 此外，在已选课程的那一列，点击对应的课程，会获取课程的详细信息，并弹出与第一步中点击「查看详情」按钮显示的内容类似的课程详细信息窗口，你可以借此确认你的课程
 
+### 高级设置
+
+#### 启动选项
+
+你可以在启动程序的时候传入启动参数来进行更多的操作
+
+- `--port PORT, -p PORT` 设定程序监听的端口
+- `--publish, --P` 允许程序被外部访问
+
+#### 优先模式
+
+在 `任务添加` 页面添加任务的时候，可以选择是否开启优先模式
+
+在优先模式下，程序会死磕前面的课程，除非前面的课程无法被选取，才会继续下面的课程。非优先模式下，程序会按照列表顺序进行抢课。
+
+简而言之言而总之：优先模式是「单曲循环」，非优先模式是「列表循环」。默认设置为非优先模式
+
 ## Contributors
+
+### Main Contributors
 
 <div align="center">
 
@@ -78,6 +97,12 @@
 |  [GamerNoTitle (Pesy Wu)](https://github.com/GamerNoTitle)   |  [ricky8955555 (Phrinky)](https://github.com/ricky8955555)   |     [KeqingMoe (時雨てる)](https://github.com/KeqingMoe)      |        [Ron-1337 (Ron)](https://github.com/Ron-1337)         | [Caramel-Tea (Caramel Tea)](https://github.com/Caramel-Tea)  |
 
 </div>
+
+### All Contributors
+
+<a href="https://github.com/GDUTMeow/gdut-course-grabber/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=GDUTMeow/gdut-course-grabber" />
+</a>
 
 ## Credit
 
