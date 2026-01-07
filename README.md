@@ -101,7 +101,7 @@
 ### All Contributors
 
 <a href="https://github.com/GDUTMeow/gdut-course-grabber/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=GDUTMeow/gdut-course-grabber" />
+  <img src="https://stg.contrib.rocks/image?repo=GDUTMeow/gdut-course-grabber" />
 </a>
 
 ## Credit
