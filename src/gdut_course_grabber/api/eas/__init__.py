@@ -14,7 +14,7 @@ router = APIRouter()
 
 @router.get("/courses")
 async def get_courses(
-    account: AccountDep, count: int = 10, page: int = 1
+    account: AccountDep, count: int = 10, page: int = 1, keyword: str = ""
 ) -> ApiResponse[list[Course]]:
     """
     获取公选课课程列表路由。
@@ -29,7 +29,7 @@ async def get_courses(
     """
 
     async with EasClient(account) as client:
-        courses = await client.get_courses(count, page)
+        courses = await client.get_courses(count, page, keyword=keyword)
 
     return ApiResponse(data=courses)
 
