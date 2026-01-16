@@ -89,13 +89,12 @@ function openGDUTJW() {
 async function changeAccentColor(color = null) {
     if (!color) {
         const accentColor = await getData('accentColor');
-        if (accentColor) {
+        if (accentColor && accentColor !== '#7746ac') {
             const colorPicker = document.querySelector('#color-picker');
             colorPicker.value = accentColor;
             sober.theme.createScheme(accentColor, { page: document.querySelector('s-page') });
         }
     } else {
-        saveData('accentColor', color);
         sober.theme.createScheme(color, { page: document.querySelector('s-page') });
     }
 }
