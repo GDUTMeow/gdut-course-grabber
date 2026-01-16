@@ -1255,11 +1255,13 @@ async function searchCourses() {
     const searchTerm = searchInput.value.trim().toLowerCase();
     const courseTableBody = document.getElementById('content-table-body');
     const indicator = document.getElementById('search-btn-indicator');
+    const loadMoreBtn = document.getElementById('load-more-btn');
     courseTableBody.innerHTML = ''; // 清空现有内容
     indicator.classList.remove('hidden');
     if (searchTerm === "") {
         populateCourseTable(globalLoadedCourses);
         indicator.classList.add('hidden');
+        loadMoreBtn.classList.remove('hidden');
         return;
     }
 
@@ -1281,6 +1283,7 @@ async function searchCourses() {
     ).then(response => {
         if (response.ok) {
             // 填充课程数据到表格
+            loadMoreBtn.classList.add('hidden');
             response.json().then(body => {
                 const filteredCourses = body.data || [];
                 if (filteredCourses.length > 0) {
