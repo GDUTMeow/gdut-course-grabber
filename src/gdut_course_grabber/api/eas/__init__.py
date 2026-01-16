@@ -23,6 +23,7 @@ async def get_courses(
         account (AccountDep): 用于访问教务系统的帐户。
         count (int, optional): 数量。默认为 10。
         page (int, optional): 页面。默认为 1。
+        keyword (str, optional): 搜索关键词。
 
     Returns:
         ApiResponse[list[Course]]: 根据指定数量及页面返回相应范围的课程列表。

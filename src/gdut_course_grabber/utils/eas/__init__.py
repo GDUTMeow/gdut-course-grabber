@@ -209,6 +209,7 @@ class EasClient:
         Args:
             count (int): 数量。
             page (int): 页面。
+            keyword (str, optional): 搜索关键词。
 
         Returns:
             list[CourseModel]: 根据指定数量及页面返回相应范围的课程列表。
