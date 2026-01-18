@@ -202,13 +202,14 @@ class EasClient:
         if ret != "1":
             raise CourseSelectionFailed.from_reason(ret)
 
-    async def get_courses(self, count: int, page: int) -> list[CourseModel]:
+    async def get_courses(self, count: int, page: int, *, keyword: str = "") -> list[CourseModel]:
         """
         获取公选课课程列表。
 
         Args:
             count (int): 数量。
             page (int): 页面。
+            keyword (str, optional): 搜索关键词。
 
         Returns:
             list[CourseModel]: 根据指定数量及页面返回相应范围的课程列表。
@@ -224,6 +225,9 @@ class EasClient:
             "page": page,
             "rows": count,
         }
+
+        if keyword:
+            data.update({"searchKey": "kcmc", "searchValue": keyword})
 
         with self._handle_request_error():
             resp = await self._client.post(
