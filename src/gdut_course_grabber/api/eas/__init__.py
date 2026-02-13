@@ -14,7 +14,7 @@ router = APIRouter()
 
 @router.get("/courses")
 async def get_courses(
-    account: AccountDep, count: int = 10, page: int = 1
+    account: AccountDep, count: int = 10, page: int = 1, keyword: str = ""
 ) -> ApiResponse[list[Course]]:
     """
     获取公选课课程列表路由。
@@ -23,13 +23,14 @@ async def get_courses(
         account (AccountDep): 用于访问教务系统的帐户。
         count (int, optional): 数量。默认为 10。
         page (int, optional): 页面。默认为 1。
+        keyword (str, optional): 搜索关键词。
 
     Returns:
         ApiResponse[list[Course]]: 根据指定数量及页面返回相应范围的课程列表。
     """
 
     async with EasClient(account) as client:
-        courses = await client.get_courses(count, page)
+        courses = await client.get_courses(count, page, keyword=keyword)
 
     return ApiResponse(data=courses)
 

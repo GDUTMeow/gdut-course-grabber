@@ -1250,38 +1250,56 @@ function getData(key) {
         });
 }
 
-function searchCourses() {
+async function searchCourses() {
     const searchInput = document.getElementById('search-course-input');
     const searchTerm = searchInput.value.trim().toLowerCase();
     const courseTableBody = document.getElementById('content-table-body');
     const indicator = document.getElementById('search-btn-indicator');
+    const loadMoreBtn = document.getElementById('load-more-btn');
     courseTableBody.innerHTML = ''; // 清空现有内容
     indicator.classList.remove('hidden');
     if (searchTerm === "") {
         populateCourseTable(globalLoadedCourses);
         indicator.classList.add('hidden');
+        loadMoreBtn.classList.remove('hidden');
         return;
     }
 
-    const filteredCourses = globalLoadedCourses.filter(course => {
-        const courseName = String(course.name || '').toLowerCase();
-        const courseId = String(course.id || '');
-        const courseTeacher = String(course.teacher || '').toLowerCase();
-        const courseCategory = String(course.category || '').toLowerCase();
+    // const filteredCourses = globalLoadedCourses.filter(course => {
+    //     const courseName = String(course.name || '').toLowerCase();
+    //     const courseId = String(course.id || '');
+    //     const courseTeacher = String(course.teacher || '').toLowerCase();
+    //     const courseCategory = String(course.category || '').toLowerCase();
 
-        return courseName.includes(searchTerm) ||
-            courseId.includes(searchTerm) ||
-            courseTeacher.includes(searchTerm) ||
-            courseCategory.includes(searchTerm);
+    //     return courseName.includes(searchTerm) ||
+    //         courseId.includes(searchTerm) ||
+    //         courseTeacher.includes(searchTerm) ||
+    //         courseCategory.includes(searchTerm);
+    // });
+
+    const sessionId = await getData('userSessionId') || '';
+    fetch(
+        `/api/eas/courses?count=${1000}&page=1&keyword=${encodeURIComponent(searchTerm)}&session_id=${encodeURIComponent(sessionId || '')}`,
+    ).then(response => {
+        if (response.ok) {
+            // 填充课程数据到表格
+            loadMoreBtn.classList.add('hidden');
+            response.json().then(body => {
+                const filteredCourses = body.data || [];
+                if (filteredCourses.length > 0) {
+                    populateCourseTable(filteredCourses);
+                    indicator.classList.add('hidden');
+                } else {
+                    showToast('未找到匹配的课程', 'info');
+                    indicator.classList.add('hidden');
+                }
+            })
+        }
+    }).catch(error => {
+        console.error('搜索课程失败: ', error);
+        showToast(`搜索课程失败，请稍候重试！`, 'error');
+        indicator.classList.add('hidden');
     });
-
-    if (filteredCourses.length > 0) {
-        populateCourseTable(filteredCourses);
-        indicator.classList.add('hidden');
-    } else {
-        showToast('未找到匹配的课程', 'info');
-        indicator.classList.add('hidden');
-    }
 }
 
 
