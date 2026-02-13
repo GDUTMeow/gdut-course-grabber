@@ -12,6 +12,7 @@ dependencies = [
     "fastapi[standard]~=0.115.0",
     "httpx~=0.28.0",
     "platformdirs~=4.0",
+    "uvicorn>=0.40.0",
 ]
 requires-python = "==3.12.*"
 readme = "README.md"
