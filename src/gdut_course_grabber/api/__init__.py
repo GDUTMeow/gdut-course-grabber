@@ -8,8 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from gdut_course_grabber.api.exc import ApiException, unexpected_error, validation_error
-
-from . import eas, grabber, storage
+from gdut_course_grabber.api.routers import eas, grabber, storage
 
 app = FastAPI()
 """
