@@ -4,6 +4,7 @@
 
 from datetime import datetime, timedelta, timezone
 from enum import IntEnum
+from typing import Optional
 
 from pydantic import BaseModel, field_validator
 from pydantic_core import PydanticCustomError
@@ -91,7 +92,7 @@ class Lesson(BaseModel):
     授课周次。
     """
 
-    day: int
+    day: Optional[int] = None
     """
     授课星期数。
     """
@@ -116,7 +117,7 @@ class Lesson(BaseModel):
     授课老师。
     """
 
-    sessions: list[int]
+    sessions: Optional[list[int]] = None
     """
     节次。
     """

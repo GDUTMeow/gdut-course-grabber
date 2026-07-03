@@ -2,6 +2,8 @@
 提供仅用于反序列化教务系统 API 响应数据的中间类型。
 """
 
+from typing import Optional
+
 from pydantic import Field, field_validator
 
 from gdut_course_grabber.models import Course as CourseModel
@@ -28,8 +30,8 @@ class Lesson(LessonModel):
     location: str = Field(validation_alias="zdjxcdmc")
     teachers: list[str] = Field(validation_alias="teaxms")
     week: int = Field(validation_alias="zc")
-    day: int = Field(validation_alias="xq")
-    sessions: list[int] = Field(validation_alias="jcdm2")
+    day: Optional[int] = Field(validation_alias="xq", default=None)
+    sessions: Optional[list[int]] = Field(validation_alias="jcdm2", default=None)
 
     @field_validator("teachers", mode="before")
     @classmethod
@@ -38,5 +40,14 @@ class Lesson(LessonModel):
 
     @field_validator("sessions", mode="before")
     @classmethod
-    def split_sessions(cls, value: str) -> list[int]:
+    def split_sessions(cls, value: str) -> Optional[list[int]]:
+        if not value or not value.strip():
+            return None
         return list(map(int, value.split(",")))
+
+    @field_validator("day", mode="before")
+    @classmethod
+    def parse_day(cls, value: str | int) -> Optional[int]:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return int(value)
