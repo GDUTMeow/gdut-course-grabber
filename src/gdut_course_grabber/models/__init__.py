@@ -91,7 +91,7 @@ class Lesson(BaseModel):
     授课周次。
     """
 
-    day: int
+    day: int | None = None
     """
     授课星期数。
     """
@@ -116,7 +116,7 @@ class Lesson(BaseModel):
     授课老师。
     """
 
-    sessions: list[int]
+    sessions: list[int] = []
     """
     节次。
     """
