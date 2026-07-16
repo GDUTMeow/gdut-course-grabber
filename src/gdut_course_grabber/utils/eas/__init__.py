@@ -131,7 +131,6 @@ class EasClient:
 
         Args:
             account (Account): 用于访问教务系统的帐户。
-            base_url (str, optional): 教务系统 URL。默认为 `_DEFAULT_BASE_URL`.
         """
 
         cookies = {"JSESSIONID": account.session_id}
