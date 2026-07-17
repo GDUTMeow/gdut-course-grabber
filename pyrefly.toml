@@ -1,6 +1,0 @@
-preset = "strict"
-
-project-includes = [
-    "**/*.py*",
-    "**/*.ipynb",
-]
