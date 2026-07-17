@@ -29,8 +29,7 @@ async def get_courses(
         ApiResponse[list[Course]]: 根据指定数量及页面返回相应范围的课程列表。
     """
 
-    async with EasClient(account) as client:
-        courses = await client.get_courses(count, page, keyword=keyword)
+    courses = await account.client.get_courses(count, page, keyword=keyword)
 
     return ApiResponse(data=courses)
 
@@ -48,7 +47,6 @@ async def get_lessons(account: AccountDep, id: int) -> ApiResponse[list[Lesson]]
         ApiResponse[list[Lesson]]: 指定课程的节次详情列表。
     """
 
-    async with EasClient(account) as client:
-        lessons = await client.get_lessons(id)
+    lessons = await account.client.get_lessons(id)
 
     return ApiResponse(data=lessons)

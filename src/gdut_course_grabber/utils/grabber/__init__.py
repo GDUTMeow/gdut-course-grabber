@@ -10,6 +10,7 @@ from pydantic import TypeAdapter
 
 from gdut_course_grabber.core.grabber import Grabber
 from gdut_course_grabber.models import GrabberTask
+from gdut_course_grabber.utils.account import AccountHub
 
 
 @dataclass(kw_only=True)
@@ -35,6 +36,7 @@ class GrabberTaskManager:
     _next_id: int
 
     path: str | os.PathLike[str]
+    accounts: AccountHub
 
     @property
     def grabbers(self) -> MappingProxyType[int, GrabberEntry]:
@@ -44,7 +46,7 @@ class GrabberTaskManager:
 
         return MappingProxyType(self._grabbers)
 
-    def __init__(self, path: str | os.PathLike[str]) -> None:
+    def __init__(self, path: str | os.PathLike[str], accounts: AccountHub) -> None:
         """
         初始化 `GrabberTaskManager`。
 
@@ -55,6 +57,7 @@ class GrabberTaskManager:
         self._grabbers = {}
         self._next_id = 0
         self.path = path
+        self.accounts = accounts
 
         self._load_tasks()
 
@@ -96,7 +99,8 @@ class GrabberTaskManager:
             Grabber: 从指定抢课任务解析创建的抢课工具。
         """
 
-        return Grabber(task.account, task.config, task.courses)
+        client = self.accounts.accounts[task.username].client
+        return Grabber(client, task.config, task.courses)
 
     async def update_task(self, id: int, task: GrabberTask) -> None:
         """

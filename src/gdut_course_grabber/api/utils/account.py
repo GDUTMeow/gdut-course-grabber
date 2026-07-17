@@ -6,23 +6,24 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from gdut_course_grabber.models import Account
+from gdut_course_grabber.context.account import account_hub
+from gdut_course_grabber.utils.account import AccountEntry
 
 __all__ = ["AccountDep"]
 
 
-def _account_parameters(session_id: str) -> Account:
+def _account_parameters(username: str) -> AccountEntry:
     """
     解析参数为帐户。
 
     Args:
-        session_id (str): 会话 ID。
+        username (str): 用户名。
 
     Returns:
-        Account: 解析结果。
+        AccountEntry: 解析结果。
     """
 
-    return Account(session_id=session_id)
+    return account_hub.accounts[username]
 
 
-AccountDep = Annotated[Account, Depends(_account_parameters)]
+AccountDep = Annotated[AccountEntry, Depends(_account_parameters)]

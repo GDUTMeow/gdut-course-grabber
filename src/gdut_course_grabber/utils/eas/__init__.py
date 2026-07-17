@@ -2,10 +2,13 @@
 提供教务系统 (EAS) 相关实用工具。
 """
 
+import asyncio
 import contextlib
 import json as jsonlib
 from typing import Any, Generator, Self
 
+from gduter.client import AcademicAffairsOfficeClient, LoginClient
+from gduter.exception import AcademicLoginError
 from httpx import AsyncClient, HTTPStatusError, Response
 from pydantic import TypeAdapter
 
@@ -123,7 +126,16 @@ class EasClient:
     提供相关 API 访问及数据反序列化操作。
     """
 
-    _client: AsyncClient
+    _portal: LoginClient
+    _base: AcademicAffairsOfficeClient
+    _account: Account
+
+    @property
+    def client(self) -> AsyncClient:
+        base = self._base.client
+        return AsyncClient(
+            base_url=_BASE_URL, headers=_BASE_HEADER, cookies=base.cookies, follow_redirects=True
+        )
 
     def __init__(self, account: Account) -> None:
         """
@@ -133,24 +145,12 @@ class EasClient:
             account (Account): 用于访问教务系统的帐户。
         """
 
-        cookies = {"JSESSIONID": account.session_id}
-        self._client = AsyncClient(base_url=_BASE_URL, headers=_BASE_HEADER, cookies=cookies)
-
-    async def aclose(self) -> None:
-        """
-        关闭所有传输。
-        """
-
-        await self._client.aclose()
-
-    async def __aenter__(self) -> Self:
-        return self
-
-    async def __aexit__(self, *_) -> None:
-        await self.aclose()
+        self._portal = LoginClient()
+        self._base = AcademicAffairsOfficeClient(self._portal)
+        self._account = account
 
     @staticmethod
-    def _validate(resp: Response) -> bytes:
+    def _validate(resp: Response) -> Response:
         """
         校验响应数据。
 
@@ -162,10 +162,9 @@ class EasClient:
         """
 
         resp.raise_for_status()
-        data = resp.read()
-        if data[:32].lstrip().startswith(b"<!DOCTYPE"):
+        if resp.content.lstrip().startswith(b"<!DOCTYPE"):
             raise AuthorizationFailed
-        return data
+        return resp
 
     @staticmethod
     @contextlib.contextmanager
@@ -182,6 +181,27 @@ class EasClient:
 
             raise
 
+    async def _authorize(self) -> None:
+        """
+        通过统一认证服务认证。
+        """
+
+        await asyncio.to_thread(self._portal.login, self._account.username, self._account.password)
+        self._base = AcademicAffairsOfficeClient(self._portal)
+
+    async def login(self) -> None:
+        """
+        登录。
+        """
+
+        base = lambda: asyncio.to_thread(self._base.login)
+
+        try:
+            await base()
+        except AcademicLoginError:
+            await self._authorize()
+            await base()
+
     async def select_course(self, course: CourseModel) -> None:
         """
         选课。
@@ -190,13 +210,13 @@ class EasClient:
             course (CourseModel): 所需选择的课程。
         """
 
-        headers = {"Referer": str(self._client.base_url.join("/xskjcjxx!kjcjList.action"))}
+        headers = {"Referer": str(self.client.base_url.join("/xskjcjxx!kjcjList.action"))}
         data = {"kcrwdm": str(course.id), "kcmc": course.name}
 
+        await self.login()
         with self._handle_request_error():
-            resp = await self._client.post("/xsxklist!getAdd.action", headers=headers, data=data)
-
-        ret = self._validate(resp).decode().strip()
+            resp = await self.client.post("/xsxklist!getAdd.action", headers=headers, data=data)
+            ret = self._validate(resp).content.decode().strip()
 
         if ret != "1":
             raise CourseSelectionFailed.from_reason(ret)
@@ -217,7 +237,7 @@ class EasClient:
         if page < 1 or count < 1:
             raise ValueError
 
-        headers = {"Referer": str(self._client.base_url.join("xsxklist!xsmhxsxk.action"))}
+        headers = {"Referer": str(self.client.base_url.join("xsxklist!xsmhxsxk.action"))}
         data: dict[str, Any] = {
             "sort": "kcrwdm",
             "order": "asc",
@@ -228,12 +248,13 @@ class EasClient:
         if keyword:
             data.update({"searchKey": "kcmc", "searchValue": keyword})
 
+        await self.login()
         with self._handle_request_error():
-            resp = await self._client.post(
+            resp = await self.client.post(
                 "/xsxklist!getDataList.action", headers=headers, data=data
             )
 
-        json = jsonlib.loads(self._validate(resp))
+        json = jsonlib.loads(self._validate(resp).content)
         return list(
             map(
                 CourseModel.model_validate,
@@ -254,16 +275,17 @@ class EasClient:
 
         headers = {
             "Referer": str(
-                self._client.base_url.join(f"/xsxklist!viewJxrl.action?kcrwdm={course_id}")
+                self.client.base_url.join(f"/xsxklist!viewJxrl.action?kcrwdm={course_id}")
             )
         }
 
+        await self.login()
         with self._handle_request_error():
-            resp = await self._client.get(
+            resp = await self.client.get(
                 f"/xsxklist!getJxrlDataList.action?kcrwdm={course_id}", headers=headers
             )
 
-        json = jsonlib.loads(self._validate(resp))
+        json = jsonlib.loads(self._validate(resp).content)
         return list(
             map(
                 LessonModel.model_validate,
