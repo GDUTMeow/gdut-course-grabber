@@ -8,6 +8,8 @@ globalPageSize = 20;
 globalLoggedIn = false;
 globalCourses = [];
 globalLoadedCourses = [];
+globalCurrentUsername = "";
+globalCourseListLoaded = false;
 
 globalAutoRefreshTask = false; // 是否自动刷新任务列表
 globalIndicatorInterval = null; // 用于存储自动刷新任务的定时器
@@ -238,6 +240,7 @@ function flushCoursesTable() {
     globalCurrentCount.innerText = '0';
     displayedCourseIdsInTable.clear();
     globalLoadedCourses = []; // 清空已加载课程列表
+    globalCourseListLoaded = false;
     loadMoreCourses();
 }
 
@@ -256,17 +259,16 @@ function onCustomPageSizeChecked() {
     document.getElementById('custom-page-size-btn').classList.remove('hidden');
 }
 
-async function fetchNewCourses(page = 1, size = 20, positive = true) {
+async function fetchNewCourses(page = 1, size = 20, positive = true, username = globalCurrentUsername) {
     globalLoading.setAttribute('showed', 'true');
 
-    if (!globalLoggedIn || await getData('userSessionId') == null) {
-        showToast('请先登录后再进行操作', 'error');
+    if (!globalLoggedIn || !username) {
+        showToast('请先选择账号后再进行操作', 'error');
         globalLoading.setAttribute('showed', 'false');
         return Promise.resolve(false);
     }
-    const cookie = await getData('userSessionId');
 
-    return fetch(`/api/eas/courses?count=${size}&page=${page}&session_id=${cookie}`, {
+    return fetch(`/api/eas/courses?count=${size}&page=${page}&username=${encodeURIComponent(username)}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -308,10 +310,19 @@ async function fetchNewCourses(page = 1, size = 20, positive = true) {
 function loadMoreCourses() {
     const currentPage = Number(globalCurrentPage.innerText);
     const newPage = currentPage + 1;
+    const username = globalCurrentUsername;
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    const loadingIndicator = document.getElementById('load-more-btn-loading');
+    loadMoreBtn.setAttribute('disabled', 'true');
+    loadingIndicator.classList.remove('hidden');
 
-    fetchNewCourses(newPage, globalPageSize, true)
+    return fetchNewCourses(newPage, globalPageSize, true, username)
         .then(coursesData => {
+            if (username !== globalCurrentUsername) {
+                return;
+            }
             if (coursesData && Array.isArray(coursesData)) {
+                globalCourseListLoaded = true;
                 let newCoursesAddedCount = 0;
                 coursesData.forEach(course => {
                     if (course && typeof course.id !== 'undefined') {
@@ -346,6 +357,10 @@ function loadMoreCourses() {
             } else {
                 console.warn('loadMoreCourses: 未获取到新的课程数据或数据格式不正确 Data received:', coursesData);
             }
+        })
+        .finally(() => {
+            loadMoreBtn.removeAttribute('disabled');
+            loadingIndicator.classList.add('hidden');
         });
 }
 
@@ -448,13 +463,13 @@ function formatWeeksArrayToDisplayString(weeks) {
 }
 
 async function fetchCourseDetail(classId, positive = true) {
-    if (!globalLoggedIn || !await getData('userSessionId')) {
-        showToast('请先登录后再进行操作', 'error');
+    if (!globalLoggedIn || !globalCurrentUsername) {
+        showToast('请先选择账号后再进行操作', 'error');
         return Promise.resolve(false);
     }
     globalLoading.setAttribute('showed', 'true');
 
-    return fetch("/api/eas/courses/" + classId + "/lessons?session_id=" + await getData('userSessionId'), {
+    return fetch("/api/eas/courses/" + classId + "/lessons?username=" + encodeURIComponent(globalCurrentUsername), {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -557,8 +572,8 @@ function showCourseDetail(classId) {
 }
 
 async function addCourse(classId, courseRawData) {
-    if (!globalLoggedIn || !await getData('userSessionId')) {
-        showToast('请先登录后再进行操作', 'error');
+    if (!globalLoggedIn || !globalCurrentUsername) {
+        showToast('请先选择账号后再进行操作', 'error');
         return;
     }
 
@@ -1268,9 +1283,14 @@ async function searchCourses() {
     //         courseCategory.includes(searchTerm);
     // });
 
-    const sessionId = await getData('userSessionId') || '';
+    if (!globalLoggedIn || !globalCurrentUsername) {
+        showToast('请先选择账号后再进行操作', 'error');
+        indicator.classList.add('hidden');
+        return;
+    }
+
     fetch(
-        `/api/eas/courses?count=${1000}&page=1&keyword=${encodeURIComponent(searchTerm)}&session_id=${encodeURIComponent(sessionId || '')}`,
+        `/api/eas/courses?count=${1000}&page=1&keyword=${encodeURIComponent(searchTerm)}&username=${encodeURIComponent(globalCurrentUsername)}`,
     ).then(response => {
         if (response.ok) {
             // 填充课程数据到表格
@@ -1319,15 +1339,23 @@ function onDelayChange(element) {
 
 function onAccountChipClicked(element) {
     const container = document.getElementById("account-added-container")
-    const chips = document.querySelectorAll("s-chip")
+    const chips = container.querySelectorAll("s-chip")
     if (!element.checked) {
         chips.forEach((chip) => {
             if (chip != element) {
                 chip.setAttribute("checked", false) // 清理其他选项的选中状态
             }
         })
-        document.getElementById("task-account").value = element.getAttribute("account-name")
+        globalCurrentUsername = element.getAttribute("account-name")
+        globalLoggedIn = true
+        document.getElementById("task-account").value = globalCurrentUsername
+        document.getElementById('content-no-content-tip').classList.add('hidden')
+        if (!globalCourseListLoaded) {
+            flushCoursesTable()
+        }
     } else {
+        globalCurrentUsername = ""
+        globalLoggedIn = false
         document.getElementById("task-account").value = "未选择，请先到课程列表页面选择账号"
     }
 }
