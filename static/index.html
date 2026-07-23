@@ -87,6 +87,8 @@
                   以下为社区贡献者<br>
                   <a href="https://github.com/molqzone" type="no-decoration"><s-avatar
                       src="https://avatars.githubusercontent.com/u/195118620" height="16px" width="16px"></s-avatar></a>
+                  <a href="https://github.com/FengZi-lv" type="no-decoration"><s-avatar
+                      src="https://avatars.githubusercontent.com/u/59948673" height="16px" width="16px"></s-avatar></a>
                 </div>
               </div>
               <s-button type="text" slot="action"> 关闭 </s-button>
@@ -184,10 +186,10 @@
             <s-card style="margin-top: 32px;">
               <div slot="headline">课程列表</div>
               <div slot="text">
-                <s-text-field id="cookie" label="JSESSIONID" value="" class="full-width"
-                  onchange="syncSessionId()"></s-text-field>
+                <s-text-field id="username-input" label="统一身份验证平台账号" value="" class="full-width"></s-text-field>
+                <s-text-field id="password-input" label="统一身份验证平台密码" value="" class="full-width"
+                  type="password"></s-text-field>
                 <div align="right" style="margin-top: 8px;">
-                  <p id="status">当前状态：⚪ 未知</p>
                   <s-dialog>
                     <s-button slot="trigger" type="outlined"> 查看学分要求 </s-button>
                     <div slot="headline" align="left"> 公选课学分修读要求 </div>
@@ -231,15 +233,19 @@
                     <s-button slot="action" type="text">取消</s-button>
                     <s-button slot="action" type="text">确定</s-button>
                   </s-dialog>
-                  <s-button id="save-config-btn" onclick="saveAndLogin()">
+                  <s-button id="add-account-btn" onclick="addAccount()">
                     <s-circular-progress indeterminate="true" class="hidden"
-                      id="save-config-btn-loading"></s-circular-progress>
-                    保存并登录 </s-button>
+                      id="add-account-btn-loading"></s-circular-progress>
+                    添加账号 </s-button>
                 </div>
                 <p>使用文档：<a
                     href="https://github.com/GDUTMeow/gdut-course-grabber/">https://github.com/GDUTMeow/gdut-course-grabber/</a>
                 </p>
-                <s-divider></s-divider>
+                <s-divider style="margin: 8px 0;">当前已添加账号</s-divider>
+                <div align="center" id="account-added-container" style="margin: 8px 0;">
+                  <p id="account-added-container-tips">无账号，请现在上方添加账号</p>
+                </div>
+                <s-divider style="margin: 0 8px;"></s-divider>
                 <div align="center" style="margin-bottom: 16px;">
                   <p>当前已加载了 <span id="current-page">0</span> 页，已加载 <span id="current-count">0</span> 条</p>
                   <s-radio-button name="page-size" onchange="onChangePageSize(10)">10 条/页</s-radio-button>
@@ -305,7 +311,7 @@
                 <s-empty id="operation-panel-course-empty" class="hidden">看起来你还没有选择要上的课诶？</s-empty>
                 <s-divider></s-divider>
                 <div align="left">
-                  <s-text-field id="task-sessionid" label="JESSIONID" style="display: grid; width: auto;"
+                  <s-text-field id="task-account" label="当前已选账号" style="display: grid; width: auto;"
                     readOnly="true">
                     <div slot="text">若需要修改，请到课程列表页面进行修改</div>
                   </s-text-field>
@@ -398,7 +404,8 @@
           style="width: 100%; height: 40px; border: none; border-radius: 8px; cursor: pointer;"
           oninput="changeAccentColor(this.value)">
         <div align="right" style="margin-top: 8px;">
-          <s-button slot="action" type="text" onclick="changeAccentColor('#7746ac'); saveData('accentColor', '#7746ac')">恢复</s-button>
+          <s-button slot="action" type="text"
+            onclick="changeAccentColor('#7746ac'); saveData('accentColor', '#7746ac')">恢复</s-button>
           <s-button slot="action" type="text"
             onclick="document.getElementById('color-palette-dialog').removeAttribute('showed'); saveData('accentColor', document.getElementById('color-picker').value)">保存</s-button>
         </div>
@@ -406,6 +413,7 @@
   </s-page>
   <script src="js/scripts.js"></script>
   <script src="js/sober.min.js"></script>
+  <!-- <script src="https://unpkg.com/sober/dist/sober.min.js"></script> -->
   <script src="js/theme.js"></script>
   <script src="js/pangu.min.js"></script>
   <script src="js/toastify.js"></script>

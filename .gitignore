@@ -182,3 +182,9 @@ python/
 
 # UV
 uv.lock
+
+# Openapi docs
+openapi.json
+
+# MacOS Shit
+*.DS_Store

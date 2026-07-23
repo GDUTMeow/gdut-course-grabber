@@ -141,16 +141,8 @@ function changePanel(panelId) {
 }
 
 async function initialize() {
-    const cookieField = document.getElementById('cookie');
-    const taskSessionIdField = document.getElementById('task-sessionid')
     const status = document.getElementById('status');
-    status.innerText = '🔴 未登录';
-    if (await getData('userSessionId')) {
-        cookieField.value = await getData('userSessionId');
-        taskSessionIdField.value = await getData('userSessionId'); // 同步初始值
-        saveAndLogin(false);
-    }
-
+    await getAccountList()
     const storedCourses = await getData('userSelectedCourses');
     if (storedCourses) {
         try {
@@ -203,7 +195,6 @@ function login(cookie, positive = true) {
                         showToast('登录成功！', 'success');
                     }
                     document.getElementById('content-no-content-tip').classList.add('hidden');
-                    document.getElementById('status').innerText = '🟢 已登录';
                     document.getElementById('content-table-body').innerHTML = '';
                     globalCurrentPage.innerText = '0';
                     globalCurrentCount.innerText = '0';
@@ -783,7 +774,7 @@ async function addTask() {
         config: {
             delay: "PT" + (
                 (document.getElementById('task-delay').value && document.getElementById('task-delay').value >= 0.5) ?
-                document.getElementById('task-delay').value : "0.5"
+                    document.getElementById('task-delay').value : "0.5"
             ) + "S",
             retry: document.getElementById('task-auto-retry-switch').checked,
             priority_mode: priorityModeSwitch ? priorityModeSwitch.checked : false,
@@ -1019,7 +1010,7 @@ async function stopTask(taskId) {
 function syncSessionId() {
     const cookieField = document.getElementById('cookie');
     const sessionId = cookieField.value.trim();
-    const taskSessionIdField = document.getElementById('task-sessionid');
+    const taskSessionIdField = document.getElementById('task-account');
     if (taskSessionIdField) {
         taskSessionIdField.value = sessionId;
     }
@@ -1325,6 +1316,116 @@ function onDelayChange(element) {
         showToast('抢课延迟不能小于 0.5 秒，已自动调整为 0.5 秒');
     }
 }
+
+function onAccountChipClicked(element) {
+    const container = document.getElementById("account-added-container")
+    const chips = document.querySelectorAll("s-chip")
+    if (!element.checked) {
+        chips.forEach((chip) => {
+            if (chip != element) {
+                chip.setAttribute("checked", false) // 清理其他选项的选中状态
+            }
+        })
+        document.getElementById("task-account").value = element.getAttribute("account-name")
+    } else {
+        document.getElementById("task-account").value = "未选择，请先到课程列表页面选择账号"
+    }
+}
+
+async function getAccountList() {
+    var accountList = [];
+    fetch("/api/account").then(resp => {
+        if (resp.ok) {
+            resp.json().then(data => {
+                if (data && data.data && data.data.length > 0) {
+                    populateAccountChips(data.data)
+                } else {
+                    document.getElementById("account-added-container-tips").style.display = ''
+                }
+            })
+        }
+    })
+}
+
+async function deleteAccount(username) {
+    fetch(`/api/account/?username=${username}`, {
+        method: 'DELETE',
+    }).then(resp => {
+        if (resp.ok) {
+            showToast(`账号 ${username} 已删除`, 'success')
+            getAccountList()
+        } else {
+            resp.json().then(data => {
+                showToast(`账号删除失败: ${data.message || resp.statusText}`, "error")
+            }).catch(() => {
+                showToast(`账号删除失败: ${resp.statusText}`, "error")
+            })
+        }
+    })
+}
+
+function populateAccountChips(accounts) {
+    const container = document.getElementById("account-added-container")
+    // 清理所有 s-chip
+    container.querySelectorAll("s-chip").forEach((chip) => {
+        chip.remove()
+    })
+    document.getElementById("account-added-container-tips").style.display = 'none'
+    accounts.forEach((account) => {
+        chip = `<s-chip account-name="${account.username}" clickable="true" onclick="onAccountChipClicked(this)">
+                    <s-icon-button slot="action" onclick="deleteAccount('${account.username}')">
+                        <s-icon name="close"></s-icon>
+                    </s-icon-button>
+                    ${account.username}
+                </s-chip>`
+        container.insertAdjacentHTML('beforeend', chip)
+    })
+}
+
+function addAccount() {
+    const accountInput = document.getElementById("username-input")
+    const accountName = accountInput.value.trim()
+    const passwordInput = document.getElementById("password-input")
+    const password = passwordInput.value.trim()
+    const addAccountBtn = document.getElementById("add-account-btn")
+    const addAccountBtnLoading = document.getElementById("add-account-btn-loading")
+    addAccountBtn.setAttribute("disabled", "true")
+    addAccountBtnLoading.classList.remove("hidden")
+    if (accountName === "") {
+        showToast("账号名称不能为空", "error")
+        addAccountBtn.removeAttribute("disabled")
+        addAccountBtnLoading.classList.add("hidden")
+        return
+    }
+    fetch("/api/account", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username: accountName, password: password })
+    }).then(resp => {
+        if (resp.ok) {
+            showToast("账号添加成功", "success")
+            accountInput.value = ""
+            passwordInput.value = ""
+            getAccountList()
+        } else {
+            resp.json().then(data => {
+                showToast(`账号添加失败: ${data.message || resp.statusText}`, "error")
+            }).catch(() => {
+                showToast(`账号添加失败: ${resp.statusText}`, "error")
+            })
+        }
+    }).catch(error => {
+        console.error("添加账号失败:", error)
+        showToast(`添加账号失败: ${error.message || error}`, "error")
+    })
+        .finally(() => {
+            addAccountBtn.removeAttribute("disabled")
+            addAccountBtnLoading.classList.add("hidden")
+        })
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
     initialize();
