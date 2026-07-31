@@ -12,6 +12,7 @@ globalCurrentUsername = "";
 globalCourseListLoaded = false;
 
 globalAutoRefreshTask = false; // 是否自动刷新任务列表
+globalTaskStatusRefreshing = false; // 是否正在增量刷新任务状态
 globalIndicatorInterval = null; // 用于存储自动刷新任务的定时器
 currentIndicatorSteps = 0;
 totalIndicatorStepsForCycle = 0;
@@ -874,6 +875,73 @@ async function getTaskStatus(taskId) {
     }
 }
 
+function updateTaskStatusElements(taskRow, statusValue) {
+    const taskId = taskRow.getAttribute('task-id');
+    const statusText = TASK_STATUS_MAP[statusValue] || '未知';
+    const statusCell = taskRow.querySelector('[task-status]');
+    const toggleBtn = taskRow.querySelector('[task-toggle]');
+
+    if (statusCell && statusCell.innerText !== statusText) {
+        statusCell.innerText = statusText;
+    }
+    if (!toggleBtn) {
+        return;
+    }
+
+    let buttonText = '状态未知';
+    let buttonAction = '';
+    let disabled = true;
+    if (statusValue === 1 || statusValue === 2) {
+        buttonText = '停止';
+        buttonAction = `stopTask('${taskId}')`;
+        disabled = false;
+    } else if (statusValue === 0) {
+        buttonText = '启动';
+        buttonAction = `startTask('${taskId}')`;
+        disabled = false;
+    }
+
+    if (toggleBtn.innerText !== buttonText) {
+        toggleBtn.innerText = buttonText;
+    }
+    if (buttonAction && toggleBtn.getAttribute('onclick') !== buttonAction) {
+        toggleBtn.setAttribute('onclick', buttonAction);
+    } else if (!buttonAction && toggleBtn.hasAttribute('onclick')) {
+        toggleBtn.removeAttribute('onclick');
+    }
+    if (disabled) {
+        if (!toggleBtn.hasAttribute('disabled')) {
+            toggleBtn.setAttribute('disabled', 'true');
+        }
+    } else if (toggleBtn.hasAttribute('disabled')) {
+        toggleBtn.removeAttribute('disabled');
+    }
+}
+
+async function refreshTaskStatuses() {
+    if (globalTaskStatusRefreshing) {
+        return;
+    }
+
+    const taskRows = Array.from(document.querySelectorAll('#task-table-body s-tr[task-id]'));
+    if (taskRows.length === 0) {
+        return;
+    }
+
+    globalTaskStatusRefreshing = true;
+    try {
+        await Promise.all(taskRows.map(async taskRow => {
+            const taskId = taskRow.getAttribute('task-id');
+            const statusValue = await getTaskStatus(taskId);
+            if (statusValue !== null && taskRow.isConnected) {
+                updateTaskStatusElements(taskRow, statusValue);
+            }
+        }));
+    } finally {
+        globalTaskStatusRefreshing = false;
+    }
+}
+
 async function flushTaskTable() {
     const flushTaskTableBtn = document.getElementById('flush-task-table-btn');
     const flushTaskTableIndicator = document.getElementById('flush-task-table-indicator');
@@ -940,6 +1008,7 @@ async function flushTaskTable() {
         const operation_td = document.createElement('s-td');
         operation_td.style.alignContent = 'center';
         const toggle_btn = document.createElement('s-button');
+        toggle_btn.setAttribute('task-toggle', '');
 
         if (statusValue === 1 || statusValue === 2) {
             toggle_btn.innerText = '停止';
@@ -963,6 +1032,7 @@ async function flushTaskTable() {
         operation_td.appendChild(remove_task_btn);
 
         const table_line = document.createElement('s-tr');
+        table_line.setAttribute('task-id', String(taskId));
 
         const task_id_td = document.createElement('s-td');
         task_id_td.style.alignContent = 'center';
@@ -991,6 +1061,7 @@ async function flushTaskTable() {
         table_line.appendChild(retry_td).innerText = retry;
 
         const status_text_td = document.createElement('s-td');
+        status_text_td.setAttribute('task-status', '');
         status_text_td.style.alignContent = 'center';
         table_line.appendChild(status_text_td).innerText = statusText;
 
@@ -1018,7 +1089,7 @@ async function startTask(taskId) {
     }).catch(error => {
         showToast(`启动任务 ${taskId} 失败: ${error.message}`, 'error');
     }).finally(() => {
-        flushTaskTable();
+        refreshTaskStatuses();
         globalLoading.setAttribute('showed', 'false');
     });
 }
@@ -1037,7 +1108,7 @@ async function stopTask(taskId) {
     }).catch(error => {
         showToast(`停止任务 ${taskId} 失败: ${error.message}`, 'error');
     }).finally(() => {
-        flushTaskTable();
+        refreshTaskStatuses();
         globalLoading.setAttribute('showed', 'false');
     });
 }
@@ -1140,7 +1211,7 @@ function toggleAutoRefreshTaskTable() {
         }, 100);
 
         globalAutoRefreshTask = setInterval(() => {
-            flushTaskTable();
+            refreshTaskStatuses();
 
             currentIndicatorSteps = 0;
             refreshIndicator.value = 0;
