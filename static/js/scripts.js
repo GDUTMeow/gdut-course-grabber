@@ -471,14 +471,14 @@ function formatWeeksArrayToDisplayString(weeks) {
     return weekStr || "未知";
 }
 
-async function fetchCourseDetail(classId, positive = true) {
-    if (!globalLoggedIn || !globalCurrentUsername) {
+async function fetchCourseDetail(classId, positive = true, username = globalCurrentUsername) {
+    if (!username) {
         showToast('请先选择账号后再进行操作', 'error');
         return Promise.resolve(false);
     }
     globalLoading.setAttribute('showed', 'true');
 
-    return fetch("/api/eas/courses/" + classId + "/lessons?username=" + encodeURIComponent(globalCurrentUsername), {
+    return fetch("/api/eas/courses/" + classId + "/lessons?username=" + encodeURIComponent(username), {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -576,8 +576,8 @@ async function fetchCourseDetail(classId, positive = true) {
         });
 }
 
-function showCourseDetail(classId) {
-    fetchCourseDetail(classId, true);
+function showCourseDetail(classId, username = globalCurrentUsername) {
+    fetchCourseDetail(classId, true, username);
 }
 
 async function addCourse(classId, courseRawData) {
@@ -757,19 +757,33 @@ async function addTask() {
         showToast('课程列表为空，请先添加课程', 'error');
         return;
     }
-    if (!globalLoggedIn || !await getData('userSessionId')) {
-        showToast('请先登录后再进行操作', 'error');
+    if (!globalLoggedIn || !globalCurrentUsername) {
+        showToast('请先选择账号后再进行操作', 'error');
         return;
     }
+
     const startTimeValue = document.getElementById('task-start-time').value.trim();
     if (startTimeValue === '' || verifyTimeFormat(startTimeValue) === false) {
-        showToast('任务开始时间格式不正确，请按照 YYYY-MM-DD HH:mm:SS 的格式填写，例如 2025-09-01 12:00:00', 'error');
+        showToast('任务开始时间格式不正确，请按照 YYYY-MM-DD HH:mm:SS 的格式填写，例如 2026-09-01 12:00:00', 'error');
         return;
     }
-    const cookie = await getData('userSessionId');
+
+    const startTime = new Date(startTimeValue.replace(' ', 'T'));
+    if (Number.isNaN(startTime.getTime())) {
+        showToast('任务开始时间无效，请检查日期和时间', 'error');
+        return;
+    }
+
+    const delayInput = document.getElementById('task-delay');
+    const delay = Number(delayInput.value || 0.5);
+    if (Number.isNaN(delay) || delay < 0.5) {
+        showToast('抢课延迟不能小于 0.5 秒！', 'error');
+        return;
+    }
 
     const priorityModeSwitch = document.getElementById('task-priority-mode-switch');
-
+    const addTaskBtn = document.getElementById('add-task-btn');
+    const addTaskBtnLoading = document.getElementById('add-task-btn-loading');
     const coursesForPayload = globalCourses.map(course => {
         return {
             id: Number(course.id),
@@ -783,63 +797,47 @@ async function addTask() {
         };
     });
 
-    if (document.getElementById('task-delay').value && document.getElementById('task-delay').value < 0.5) {
-        showToast('抢课延迟不能小于 0.5 秒！', 'error');
-        return;
-    }
-    if (!document.getElementById('task-delay').value) {
-        showToast('抢课延迟为空，已使用默认值 0.5 秒');
-    }
-
     const taskData = {
-        account: {
-            session_id: cookie,
-        },
+        username: globalCurrentUsername,
         config: {
-            delay: "PT" + (
-                (document.getElementById('task-delay').value && document.getElementById('task-delay').value >= 0.5) ?
-                    document.getElementById('task-delay').value : "0.5"
-            ) + "S",
+            delay: `PT${delay}S`,
             retry: document.getElementById('task-auto-retry-switch').checked,
             priority_mode: priorityModeSwitch ? priorityModeSwitch.checked : false,
-            start_at: startTimeValue ? new Date(startTimeValue).toISOString() : new Date().toISOString(),
+            start_at: startTime.toISOString(),
         },
         courses: coursesForPayload,
     };
 
+    addTaskBtn.setAttribute('disabled', 'true');
+    addTaskBtnLoading.classList.remove('hidden');
     globalLoading.setAttribute('showed', 'true');
-    fetch("/api/grabber", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(taskData)
-    }).then(response => {
-        if (response.ok) {
-            return response.json().then(data => {
-                let taskIdMessage = '';
-                if (data && data.data && data.data.task_id) {
-                    taskIdMessage = ` (ID: ${data.data.task_id})`;
-                } else if (data && data.task_id) {
-                    taskIdMessage = ` (ID: ${data.task_id})`;
-                }
-                showToast(`抢课任务添加成功${taskIdMessage}，请注意查看任务列表`, 'success');
-                flushTaskTable();
-            });
-        } else {
-            return response.json().then(err => {
-                showToast(`抢课任务添加失败: ${err.message || response.statusText}`, 'error');
-            }).catch(() => {
-                showDialog('错误', `抢课任务添加失败，服务器返回状态码: ${response.status}，请稍后重试或查看控制台`, 'error');
-            });
+
+    try {
+        const response = await fetch("/api/grabber/", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(taskData)
+        });
+        const responseData = await response.json().catch(() => null);
+
+        if (!response.ok || (responseData && responseData.error)) {
+            const errorMessage = responseData?.message || response.statusText || `服务器返回状态码 ${response.status}`;
+            showToast(`抢课任务添加失败: ${errorMessage}`, 'error');
+            return;
         }
-    }).catch(error => {
+
+        showToast('抢课任务添加成功，请注意查看任务列表', 'success');
+        await flushTaskTable();
+    } catch (error) {
         console.error('添加抢课任务失败:', error);
         showDialog('错误', `添加抢课任务失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/gdut-course-grabber/issues/new`, 'error');
-    }).finally(() => {
+    } finally {
+        addTaskBtn.removeAttribute('disabled');
+        addTaskBtnLoading.classList.add('hidden');
         globalLoading.setAttribute('showed', 'false');
-        flushTaskTable();
-    });
+    }
 }
 
 async function getTasks() {
@@ -886,7 +884,7 @@ async function flushTaskTable() {
     const table_body = document.getElementById('task-table-body');
     const empty_message = document.getElementById('task-empty-tip');
 
-
+    if (empty_message) empty_message.classList.add('hidden');
     table_body.innerHTML = '';
 
     if (!tasksData || !tasksData.data || tasksData.data.length === 0) {
@@ -902,9 +900,9 @@ async function flushTaskTable() {
 
     for (const task of tasksData.data) {
         const taskId = task.key;
-        const session_id = task.value.account.session_id;
+        const username = task.value.username || '未知账号';
         const coursesInTask = task.value.courses;
-        const start_time = new Date(task.value.config.start_at).toLocaleString();
+        const start_time = task.value.config.start_at ? new Date(task.value.config.start_at).toLocaleString() : '立即开始';
         const delay = task.value.config.delay;
         const retry = task.value.config.retry ? '开启' : '关闭';
 
@@ -929,8 +927,10 @@ async function flushTaskTable() {
                 course_tag.innerText = displayInfo;
                 course_tag.setAttribute('type', 'outlined');
                 if (actualId) {
+                    course_tag.setAttribute('clickable', 'true');
                     course_tag.setAttribute('classId', actualId);
-                    course_tag.setAttribute('onclick', "showCourseDetail(this.getAttribute('classId')); setTimeout(() => this.removeAttribute('checked'), 0);");
+                    course_tag.setAttribute('account-name', username);
+                    course_tag.setAttribute('onclick', "showCourseDetail(this.getAttribute('classId'), this.getAttribute('account-name')); setTimeout(() => this.removeAttribute('checked'), 0);");
                 }
                 course_tags_td.appendChild(course_tag);
                 course_tags_td.appendChild(document.createElement('br'));
@@ -941,12 +941,15 @@ async function flushTaskTable() {
         operation_td.style.alignContent = 'center';
         const toggle_btn = document.createElement('s-button');
 
-        if (statusValue === 1 | statusValue === 2) {
+        if (statusValue === 1 || statusValue === 2) {
             toggle_btn.innerText = '停止';
             toggle_btn.setAttribute('onclick', `stopTask('${taskId}')`);
         } else if (statusValue === 0) {
             toggle_btn.innerText = '启动';
             toggle_btn.setAttribute('onclick', `startTask('${taskId}')`);
+        } else {
+            toggle_btn.innerText = '状态未知';
+            toggle_btn.setAttribute('disabled', 'true');
         }
         toggle_btn.style.marginRight = '8px';
 
@@ -965,9 +968,9 @@ async function flushTaskTable() {
         task_id_td.style.alignContent = 'center';
         table_line.appendChild(task_id_td).innerText = taskId;
 
-        const session_id_td = document.createElement('s-td');
-        session_id_td.style.alignContent = 'center';
-        table_line.appendChild(session_id_td).innerText = session_id;
+        const username_td = document.createElement('s-td');
+        username_td.style.alignContent = 'center';
+        table_line.appendChild(username_td).innerText = username;
         table_line.appendChild(course_tags_td);
 
         const start_time_td = document.createElement('s-td');
@@ -1003,11 +1006,14 @@ async function flushTaskTable() {
 
 async function startTask(taskId) {
     globalLoading.setAttribute('showed', 'true');
-    fetch(`/api/grabber/${taskId}/start`, { method: 'GET' }).then(response => {
-        if (response.ok) {
+    fetch(`/api/grabber/${taskId}/start`, { method: 'GET' }).then(async response => {
+        const responseData = await response.json().catch(() => null);
+        if (response.ok && responseData?.data === true) {
             showToast(`任务 ${taskId} 已成功启动`, 'success');
+        } else if (response.ok) {
+            showToast(`任务 ${taskId} 已经处于启动状态`, 'info');
         } else {
-            showToast(`启动任务 ${taskId} 失败: ${response.statusText}`, 'error');
+            showToast(`启动任务 ${taskId} 失败: ${responseData?.message || response.statusText}`, 'error');
         }
     }).catch(error => {
         showToast(`启动任务 ${taskId} 失败: ${error.message}`, 'error');
@@ -1019,12 +1025,17 @@ async function startTask(taskId) {
 
 async function stopTask(taskId) {
     globalLoading.setAttribute('showed', 'true');
-    fetch(`/api/grabber/${taskId}/cancel`, { method: 'GET' }).then(response => {
-        if (response.ok) {
+    fetch(`/api/grabber/${taskId}/cancel`, { method: 'GET' }).then(async response => {
+        const responseData = await response.json().catch(() => null);
+        if (response.ok && responseData?.data === true) {
             showToast(`任务 ${taskId} 已成功停止`, 'success');
+        } else if (response.ok) {
+            showToast(`任务 ${taskId} 当前没有在运行`, 'info');
         } else {
-            showToast(`停止任务 ${taskId} 失败: ${response.statusText}`, 'error');
+            showToast(`停止任务 ${taskId} 失败: ${responseData?.message || response.statusText}`, 'error');
         }
+    }).catch(error => {
+        showToast(`停止任务 ${taskId} 失败: ${error.message}`, 'error');
     }).finally(() => {
         flushTaskTable();
         globalLoading.setAttribute('showed', 'false');

@@ -329,7 +329,7 @@
                   </s-text-field>
                   <s-text-field label="任务开始时间（YYYY-MM-DD HH:mm:SS）" id="task-start-time"
                     style="display: grid; width: auto;" onchange="verifyTimeFormat(this.value)">
-                    <div slot="text">任务开始的时间，必须按照 YYYY-MM-DD HH:mm:SS 的格式填写，例如 <b>2025-09-01 12:00:00</b></div>
+                    <div slot="text">任务开始的时间，必须按照 YYYY-MM-DD HH:mm:SS 的格式填写，例如 <b>2026-09-01 12:00:00</b></div>
                   </s-text-field>
                   <s-text-field id="task-delay" label="抢课延迟（秒）" value="0.5" type="number" onchange="onDelayChange(this)"
                     style="display: grid; width: auto;">
@@ -348,14 +348,14 @@
                   <s-switch style="margin-left: 8px; margin-right: 16px;" id="task-priority-mode-switch"></s-switch>
                   自动重试 <s-switch checked="true" style="margin-left: 8px;" id="task-auto-retry-switch"></s-switch>
                   <s-button id="add-task-btn" onclick="addTask()" style="margin-left: 8px;">
-                    <s-circular-progress indeterminate="true" class="hidden"
-                      id="add-task-btn-loading"></s-circular-progress>
+                    <s-circular-progress indeterminate="true" class="hidden" id="add-task-btn-loading"
+                      style="width: 20px; height: 20px;"></s-circular-progress>
                     添加任务
                   </s-button>
                 </div>
-                <s-alert style="margin: 16px 0 16px 0; font-weight: bold;"
-                  type="warning">在完成上面的所有配置后，不要再刷新/重新登录教务系统，会导致原来的 JSESSIONID 失效，请求未授权；也不要过早地添加任务，JSESSIONID
-                  会过期！</s-alert>
+                <s-alert style="margin: 16px 0 16px 0; font-weight: bold;" type="warning">
+                  任务会使用当前所选账号对应的登录状态，请确认账号密码有效，并避免在任务运行期间删除该账号。
+                </s-alert>
               </div>
             </s-card>
           </div>
@@ -386,7 +386,7 @@
                   <s-thead>
                     <s-tr>
                       <s-th>任务 ID</s-th>
-                      <s-th>JSESSIONID</s-th>
+                      <s-th>账号</s-th>
                       <s-th>已选课程</s-th>
                       <s-th>启动时间</s-th>
                       <s-th>延迟</s-th>
@@ -399,7 +399,7 @@
                   <s-tbody id="task-table-body">
                   </s-tbody>
                 </s-table>
-                <s-empty id="task-empty-tip">
+                <s-empty id="task-empty-tip" class="hidden">
                   任务列表为空，还没添加抢课任务吧 (((ﾟДﾟ;)??
                 </s-empty>
               </div>
