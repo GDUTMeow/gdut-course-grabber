@@ -144,7 +144,6 @@ function changePanel(panelId) {
 }
 
 async function initialize() {
-    const status = document.getElementById('status');
     await getAccountList()
     const storedCourses = await getData('userSelectedCourses');
     if (storedCourses) {
@@ -164,75 +163,6 @@ async function initialize() {
         globalCourses = [];
     }
     changeAccentColor();
-}
-
-function saveAndLogin(positive = true) {
-    const cookieField = document.getElementById('cookie');
-    if (!cookieField.value) {
-        showToast('请先输入 JSESSIONID 再进行登录！', 'error');
-        return;
-    }
-    const cookie = cookieField.value.replace("JSESSIONID=", "").trim();
-    login(cookie, positive);
-    syncSessionId(); // 登录后同步一次
-}
-
-function login(cookie, positive = true) {
-    const saveBtn = document.getElementById('save-config-btn');
-    const loadingIndicator = document.getElementById('save-config-btn-loading');
-    saveBtn.disabled = true;
-    loadingIndicator.classList.remove('hidden');
-
-    return fetch(`/api/eas/courses?count=1&page=1&session_id=${cookie}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    })
-        .then(response => {
-            if (response.ok) {
-                return response.json().then(jsonResponse => {
-                    globalLoggedIn = true;
-                    saveData('userSessionId', cookie);
-                    if (positive) {
-                        showToast('登录成功！', 'success');
-                    }
-                    document.getElementById('content-no-content-tip').classList.add('hidden');
-                    document.getElementById('content-table-body').innerHTML = '';
-                    globalCurrentPage.innerText = '0';
-                    globalCurrentCount.innerText = '0';
-                    flushCoursesTable();
-                    return true;
-                });
-            } else {
-                return response.json().then(errorData => {
-                    const errorMessage = errorData.message || `服务器返回错误状态码: ${response.status}.`;
-                    document.getElementById('status').innerText = '🔴 登录出错，请尝试更新 JSESSIONID';
-                    if (positive) {
-                        showDialog("错误", `登录失败：${errorMessage}`, 'error');
-                    }
-                    return false;
-                }).catch(() => {
-                    document.getElementById('status').innerText = '🔴 登录出错，请尝试更新 JSESSIONID';
-                    if (positive) {
-                        showDialog('错误', `登录失败：服务器返回状态码 ${response.status}`, 'error');
-                    }
-                    return false;
-                });
-            }
-        })
-        .catch(error => {
-            document.getElementById('status').innerText = '🔴 登录出错';
-            if (positive) {
-                showDialog('错误', `登录失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/gdut-course-grabber/issues/new`, 'error');
-            }
-            console.error('登录失败:', error);
-            return false;
-        })
-        .finally(() => {
-            saveBtn.disabled = false;
-            loadingIndicator.classList.add('hidden');
-        });
 }
 
 function flushCoursesTable() {
@@ -1113,15 +1043,6 @@ async function stopTask(taskId) {
     });
 }
 
-function syncSessionId() {
-    const cookieField = document.getElementById('cookie');
-    const sessionId = cookieField.value.trim();
-    const taskSessionIdField = document.getElementById('task-account');
-    if (taskSessionIdField) {
-        taskSessionIdField.value = sessionId;
-    }
-}
-
 function verifyTimeFormat(timeString) {
     const regex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
     const field = document.getElementById('task-start-time');
@@ -1452,7 +1373,6 @@ function onAccountChipClicked(element) {
 }
 
 async function getAccountList() {
-    var accountList = [];
     fetch("/api/account").then(resp => {
         if (resp.ok) {
             resp.json().then(data => {
@@ -1551,9 +1471,4 @@ function addAccount() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initialize();
-    changeAccentColor();
-    const cookieInput = document.getElementById('cookie');
-    if (cookieInput) {
-        cookieInput.addEventListener('input', syncSessionId);
-    }
 });
