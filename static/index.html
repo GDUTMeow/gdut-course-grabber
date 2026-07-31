@@ -267,7 +267,7 @@
                     onclick="searchCourses()"><s-circular-progress indeterminate="true" id="search-btn-indicator"
                       class="hidden"></s-circular-progress> 搜索</s-button>
                 </div>
-                <s-table style="overflow: auto; display: block; text-align: center;">
+                <s-table style="overflow-x: auto; overflow-y: hidden; display: block; text-align: center;">
                   <s-thead>
                     <s-tr>
                       <s-th>课程名称 (ID)</s-th>
@@ -279,8 +279,20 @@
                   </s-thead>
                   <s-tbody id="content-table-body">
                   </s-tbody>
+                  <s-tbody id="course-table-loading-container" class="hidden">
+                    <s-tr>
+                      <s-td></s-td>
+                      <s-td></s-td>
+                      <s-td style="text-align: center;">
+                        <s-circular-progress indeterminate="true" id="course-table-loading"
+                          style="width: 32px; height: 32px;"></s-circular-progress>
+                      </s-td>
+                      <s-td></s-td>
+                      <s-td></s-td>
+                    </s-tr>
+                  </s-tbody>
                 </s-table>
-                <s-empty id="content-no-content-tip">什么都没有诶？！先登录一下吧 orz</s-empty>
+                <s-empty id="content-no-content-tip" class="hidden">未找到可以抢课的课程哦，现在课程上线了吗🤔</s-empty>
                 <div align="center" style="margin-top: 16px;">
                   <s-button id="load-more-btn" onclick="loadMoreCourses()"> <s-circular-progress indeterminate="true"
                       class="hidden" id="load-more-btn-loading"></s-circular-progress> 加载更多 </s-button>

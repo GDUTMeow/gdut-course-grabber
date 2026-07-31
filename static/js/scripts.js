@@ -313,8 +313,12 @@ function loadMoreCourses() {
     const username = globalCurrentUsername;
     const loadMoreBtn = document.getElementById('load-more-btn');
     const loadingIndicator = document.getElementById('load-more-btn-loading');
+    const tableLoadingContainer = document.getElementById('course-table-loading-container');
+    const emptyMessage = document.getElementById('content-no-content-tip');
     loadMoreBtn.setAttribute('disabled', 'true');
     loadingIndicator.classList.remove('hidden');
+    tableLoadingContainer.classList.remove('hidden');
+    emptyMessage.classList.add('hidden');
 
     return fetchNewCourses(newPage, globalPageSize, true, username)
         .then(coursesData => {
@@ -353,6 +357,10 @@ function loadMoreCourses() {
                 } else if (newPage > 1) {
                     showToast('没有更多新的课程了，已经加载完所有课程', 'info');
                 }
+
+                if (globalLoadedCourses.length === 0) {
+                    emptyMessage.classList.remove('hidden');
+                }
             } else if (coursesData === false) {
             } else {
                 console.warn('loadMoreCourses: 未获取到新的课程数据或数据格式不正确 Data received:', coursesData);
@@ -361,6 +369,7 @@ function loadMoreCourses() {
         .finally(() => {
             loadMoreBtn.removeAttribute('disabled');
             loadingIndicator.classList.add('hidden');
+            tableLoadingContainer.classList.add('hidden');
         });
 }
 
@@ -1401,6 +1410,9 @@ function populateAccountChips(accounts) {
     document.getElementById("account-added-container-tips").style.display = 'none'
     accounts.forEach((account) => {
         chip = `<s-chip account-name="${account.username}" clickable="true" onclick="onAccountChipClicked(this)">
+                    <s-icon slot="start">
+                    <svg t="1784795594199" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3946" width="200" height="200"><path d="M515.131392 563.202048c155.492352 0 281.544704-126.075904 281.544704-281.544704 0-155.492352-126.053376-281.544704-281.544704-281.544704-155.497472 0-281.547776 126.052352-281.547776 281.544704C233.58464 437.126144 359.634944 563.202048 515.131392 563.202048zM643.106816 359.1424c0 0-6.398976 101.680128-131.175424 101.680128-124.777472 0-124.777472-101.680128-124.777472-101.680128L643.106816 359.1424zM515.131392 614.391808c-332.112896 0-409.522176 170.066944-409.522176 409.496576l819.04128 0C924.650496 783.058944 848.638976 614.391808 515.131392 614.391808z" fill="#231815" p-id="3947"></path></svg>
+                    </s-icon>
                     <s-icon-button slot="action" onclick="deleteAccount('${account.username}')">
                         <s-icon name="close"></s-icon>
                     </s-icon-button>

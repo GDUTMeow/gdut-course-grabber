@@ -13,7 +13,7 @@ dependencies = [
     "httpx~=0.28.0",
     "platformdirs~=4.0",
     "uvicorn>=0.40.0",
-    "gduter-py @ git+https://github.com/GDUTMeow/gduter-py.git",
+    "gduter-py",
 ]
 requires-python = "==3.12.*"
 readme = "README.md"
@@ -34,3 +34,6 @@ max-line-length = 100
 [tool.isort]
 line_length = 100
 profile = "black"
+
+[tool.uv.sources]
+gduter-py = { git = "https://github.com/GDUTMeow/gduter-py.git" }
