@@ -123,7 +123,7 @@ jobs:
         env:
           CPYTHON_TRIPLE: ${{ matrix.cpython_triple }}
         run: |
-          pacman -Sy git
+          pacman -S --noconfirm git
           echo "Building with CPYTHON_TRIPLE=${CPYTHON_TRIPLE}"
           chmod +x ./scripts/pack.sh
           ./scripts/pack.sh
