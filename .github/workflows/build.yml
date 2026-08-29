@@ -117,6 +117,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
+          path-type: inherit
 
       - name: Build on Windows
         if: runner.os == 'Windows' && matrix.build_method == 'standard'
