@@ -1376,11 +1376,7 @@ async function getAccountList() {
     fetch("/api/account").then(resp => {
         if (resp.ok) {
             resp.json().then(data => {
-                if (data && data.data && data.data.length > 0) {
-                    populateAccountChips(data.data)
-                } else {
-                    document.getElementById("account-added-container-tips").style.display = ''
-                }
+                populateAccountChips(data?.data || [])
             })
         }
     })
@@ -1409,13 +1405,21 @@ function populateAccountChips(accounts) {
     container.querySelectorAll("s-chip").forEach((chip) => {
         chip.remove()
     })
-    document.getElementById("account-added-container-tips").style.display = 'none'
+    const accountTips = document.getElementById("account-added-container-tips")
+    accountTips.style.display = accounts.length > 0 ? 'none' : ''
+
+    if (!accounts.some((account) => account.username === globalCurrentUsername)) {
+        globalCurrentUsername = ""
+        globalLoggedIn = false
+        document.getElementById("task-account").value = "未选择，请先到课程列表页面选择账号"
+    }
+
     accounts.forEach((account) => {
         chip = `<s-chip account-name="${account.username}" clickable="true" onclick="onAccountChipClicked(this)">
                     <s-icon slot="start">
                     <svg t="1784795594199" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3946" width="200" height="200"><path d="M515.131392 563.202048c155.492352 0 281.544704-126.075904 281.544704-281.544704 0-155.492352-126.053376-281.544704-281.544704-281.544704-155.497472 0-281.547776 126.052352-281.547776 281.544704C233.58464 437.126144 359.634944 563.202048 515.131392 563.202048zM643.106816 359.1424c0 0-6.398976 101.680128-131.175424 101.680128-124.777472 0-124.777472-101.680128-124.777472-101.680128L643.106816 359.1424zM515.131392 614.391808c-332.112896 0-409.522176 170.066944-409.522176 409.496576l819.04128 0C924.650496 783.058944 848.638976 614.391808 515.131392 614.391808z" fill="#231815" p-id="3947"></path></svg>
                     </s-icon>
-                    <s-icon-button slot="action" onclick="deleteAccount('${account.username}')">
+                    <s-icon-button slot="action" onclick="event.stopPropagation(); deleteAccount('${account.username}')">
                         <s-icon name="close"></s-icon>
                     </s-icon-button>
                     ${account.username}
