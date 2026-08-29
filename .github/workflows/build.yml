@@ -117,13 +117,13 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
+          path-type: inherit
 
       - name: Build on Windows
         if: runner.os == 'Windows' && matrix.build_method == 'standard'
         env:
           CPYTHON_TRIPLE: ${{ matrix.cpython_triple }}
         run: |
-          pacman -S --noconfirm git
           echo "Building with CPYTHON_TRIPLE=${CPYTHON_TRIPLE}"
           chmod +x ./scripts/pack.sh
           ./scripts/pack.sh
