@@ -1,19 +1,20 @@
-name: Build and Push Docker Image to Docker Hub
+name: Determine Version
 
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   determine_version:
+    name: Determine Version
     runs-on: ubuntu-latest
     outputs:
       app_version: ${{ steps.version_info.outputs.app_version }}
-      docker_tags: ${{ steps.version_info.outputs.docker_tags }}
     steps:
-      - name: Checkout code (to get SHA)
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Determine Version
         id: version_info
@@ -29,16 +30,13 @@ jobs:
           fi
 
           SHORT_SHA="${SOURCE_SHA:0:7}"
-          DOCKER_REPOSITORY="gamernotitle/gdut-course-grabber"
 
           case "$BRANCH_NAME" in
             v3)
               APP_VERSION="v${PROJECT_VERSION}"
-              CHANNEL_TAG="latest"
               ;;
             dev)
               APP_VERSION="v${PROJECT_VERSION}-dev.${SHORT_SHA}"
-              CHANNEL_TAG="dev"
               ;;
             *)
               SAFE_BRANCH=$(printf '%s' "$BRANCH_NAME" \
@@ -47,42 +45,33 @@ jobs:
                 | cut -c1-64)
               SAFE_BRANCH="${SAFE_BRANCH:-branch}"
               APP_VERSION="v${PROJECT_VERSION}-dev.${SAFE_BRANCH}.${SHORT_SHA}"
-              CHANNEL_TAG=""
               ;;
           esac
 
           echo "Branch: $BRANCH_NAME"
+          echo "Source SHA: $SOURCE_SHA"
           echo "Project Version: $PROJECT_VERSION"
           echo "Determined App Version: $APP_VERSION"
           echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
 
           {
-            echo "docker_tags<<EOF"
-            echo "${DOCKER_REPOSITORY}:${APP_VERSION}"
-            if [ -n "$CHANNEL_TAG" ]; then
-              echo "${DOCKER_REPOSITORY}:${CHANNEL_TAG}"
-            fi
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+            echo "## Determine Version Result"
+            echo
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Branch | \`$BRANCH_NAME\` |"
+            echo "| Source SHA | \`$SOURCE_SHA\` |"
+            echo "| Project Version | \`$PROJECT_VERSION\` |"
+            echo "| App Version | \`$APP_VERSION\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-  build_and_push:
-    needs: determine_version
-    runs-on: ubuntu-latest
+      - name: Verify Output
+        env:
+          APP_VERSION: ${{ steps.version_info.outputs.app_version }}
+        run: |
+          if [ -z "$APP_VERSION" ]; then
+            echo "app_version output is empty" >&2
+            exit 1
+          fi
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ needs.determine_version.outputs.docker_tags }}
+          echo "Verified app_version output: $APP_VERSION"
