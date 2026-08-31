@@ -37,7 +37,12 @@ jobs:
               APP_VERSION="v${PROJECT_VERSION}-dev.${SHORT_SHA}"
               ;;
             *)
-              APP_VERSION="$SHORT_SHA"
+              SAFE_BRANCH=$(printf '%s' "$BRANCH_NAME" \
+                | tr '[:upper:]' '[:lower:]' \
+                | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+//; s/-+$//' \
+                | cut -c1-64)
+              SAFE_BRANCH="${SAFE_BRANCH:-branch}"
+              APP_VERSION="v${PROJECT_VERSION}-dev.${SAFE_BRANCH}.${SHORT_SHA}"
               ;;
           esac
 
