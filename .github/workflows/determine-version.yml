@@ -1,0 +1,77 @@
+name: Determine Version
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  determine_version:
+    name: Determine Version
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.version_info.outputs.app_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine Version
+        id: version_info
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          PROJECT_VERSION=$(grep -m1 '^version = "' pyproject.toml | cut -d'"' -f2)
+
+          if [ -z "$PROJECT_VERSION" ]; then
+            echo "Unable to read project.version from pyproject.toml" >&2
+            exit 1
+          fi
+
+          SHORT_SHA="${SOURCE_SHA:0:7}"
+
+          case "$BRANCH_NAME" in
+            v3)
+              APP_VERSION="v${PROJECT_VERSION}"
+              ;;
+            dev)
+              APP_VERSION="v${PROJECT_VERSION}-dev.${SHORT_SHA}"
+              ;;
+            *)
+              SAFE_BRANCH=$(printf '%s' "$BRANCH_NAME" \
+                | tr '[:upper:]' '[:lower:]' \
+                | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+//; s/-+$//' \
+                | cut -c1-64)
+              SAFE_BRANCH="${SAFE_BRANCH:-branch}"
+              APP_VERSION="v${PROJECT_VERSION}-dev.${SAFE_BRANCH}.${SHORT_SHA}"
+              ;;
+          esac
+
+          echo "Branch: $BRANCH_NAME"
+          echo "Source SHA: $SOURCE_SHA"
+          echo "Project Version: $PROJECT_VERSION"
+          echo "Determined App Version: $APP_VERSION"
+          echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Determine Version Result"
+            echo
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Branch | \`$BRANCH_NAME\` |"
+            echo "| Source SHA | \`$SOURCE_SHA\` |"
+            echo "| Project Version | \`$PROJECT_VERSION\` |"
+            echo "| App Version | \`$APP_VERSION\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify Output
+        env:
+          APP_VERSION: ${{ steps.version_info.outputs.app_version }}
+        run: |
+          if [ -z "$APP_VERSION" ]; then
+            echo "app_version output is empty" >&2
+            exit 1
+          fi
+
+          echo "Verified app_version output: $APP_VERSION"
