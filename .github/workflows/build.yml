@@ -2,6 +2,12 @@ name: Build Application
 
 on:
   workflow_dispatch:
+    inputs:
+      version_override:
+        description: "构建版本号（例如 v3.0.0），否则使用 Git SHA 的前 7 位"
+        required: false
+        default: ""
+        type: string
 
 jobs:
   determine_version:
@@ -16,40 +22,18 @@ jobs:
 
       - name: Determine Version
         id: version_info
-        env:
-          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          PROJECT_VERSION=$(grep -m1 '^version = "' pyproject.toml | cut -d'"' -f2)
+          VERSION_INPUT="${{ github.event.inputs.version_override }}"
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
 
-          if [ -z "$PROJECT_VERSION" ]; then
-            echo "Unable to read project.version from pyproject.toml" >&2
-            exit 1
+          if [ -n "$VERSION_INPUT" ]; then
+            APP_VERSION="$VERSION_INPUT"
+          else
+            APP_VERSION="$SHORT_SHA"
           fi
 
-          SHORT_SHA="${SOURCE_SHA:0:7}"
-
-          case "$BRANCH_NAME" in
-            v3)
-              APP_VERSION="v${PROJECT_VERSION}"
-              ;;
-            dev)
-              APP_VERSION="v${PROJECT_VERSION}-dev.${SHORT_SHA}"
-              ;;
-            *)
-              SAFE_BRANCH=$(printf '%s' "$BRANCH_NAME" \
-                | tr '[:upper:]' '[:lower:]' \
-                | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+//; s/-+$//' \
-                | cut -c1-64)
-              SAFE_BRANCH="${SAFE_BRANCH:-branch}"
-              APP_VERSION="v${PROJECT_VERSION}-dev.${SAFE_BRANCH}.${SHORT_SHA}"
-              ;;
-          esac
-
-          echo "Branch: $BRANCH_NAME"
-          echo "Project Version: $PROJECT_VERSION"
           echo "Determined App Version: $APP_VERSION"
-          echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
 
   build_app:
     needs: determine_version
