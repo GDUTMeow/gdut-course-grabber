@@ -4,7 +4,12 @@
 
 from fastapi.exceptions import RequestValidationError
 
-from gdut_course_grabber.api.types import ApiResponse, EntityNotFound, ErrorKind, ValidationError
+from gdut_course_grabber.api.types import (
+    ApiResponse,
+    EntityNotFound,
+    ErrorKind,
+    ValidationError,
+)
 
 
 class ApiException[T](Exception):
