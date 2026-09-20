@@ -8,8 +8,11 @@ globalPageSize = 20;
 globalLoggedIn = false;
 globalCourses = [];
 globalLoadedCourses = [];
+globalCurrentUsername = "";
+globalCourseListLoaded = false;
 
 globalAutoRefreshTask = false; // 是否自动刷新任务列表
+globalTaskStatusRefreshing = false; // 是否正在增量刷新任务状态
 globalIndicatorInterval = null; // 用于存储自动刷新任务的定时器
 currentIndicatorSteps = 0;
 totalIndicatorStepsForCycle = 0;
@@ -141,16 +144,7 @@ function changePanel(panelId) {
 }
 
 async function initialize() {
-    const cookieField = document.getElementById('cookie');
-    const taskSessionIdField = document.getElementById('task-sessionid')
-    const status = document.getElementById('status');
-    status.innerText = '🔴 未登录';
-    if (await getData('userSessionId')) {
-        cookieField.value = await getData('userSessionId');
-        taskSessionIdField.value = await getData('userSessionId'); // 同步初始值
-        saveAndLogin(false);
-    }
-
+    await getAccountList()
     const storedCourses = await getData('userSelectedCourses');
     if (storedCourses) {
         try {
@@ -171,82 +165,13 @@ async function initialize() {
     changeAccentColor();
 }
 
-function saveAndLogin(positive = true) {
-    const cookieField = document.getElementById('cookie');
-    if (!cookieField.value) {
-        showToast('请先输入 JSESSIONID 再进行登录！', 'error');
-        return;
-    }
-    const cookie = cookieField.value.replace("JSESSIONID=", "").trim();
-    login(cookie, positive);
-    syncSessionId(); // 登录后同步一次
-}
-
-function login(cookie, positive = true) {
-    const saveBtn = document.getElementById('save-config-btn');
-    const loadingIndicator = document.getElementById('save-config-btn-loading');
-    saveBtn.disabled = true;
-    loadingIndicator.classList.remove('hidden');
-
-    return fetch(`/api/eas/courses?count=1&page=1&session_id=${cookie}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    })
-        .then(response => {
-            if (response.ok) {
-                return response.json().then(jsonResponse => {
-                    globalLoggedIn = true;
-                    saveData('userSessionId', cookie);
-                    if (positive) {
-                        showToast('登录成功！', 'success');
-                    }
-                    document.getElementById('content-no-content-tip').classList.add('hidden');
-                    document.getElementById('status').innerText = '🟢 已登录';
-                    document.getElementById('content-table-body').innerHTML = '';
-                    globalCurrentPage.innerText = '0';
-                    globalCurrentCount.innerText = '0';
-                    flushCoursesTable();
-                    return true;
-                });
-            } else {
-                return response.json().then(errorData => {
-                    const errorMessage = errorData.message || `服务器返回错误状态码: ${response.status}.`;
-                    document.getElementById('status').innerText = '🔴 登录出错，请尝试更新 JSESSIONID';
-                    if (positive) {
-                        showDialog("错误", `登录失败：${errorMessage}`, 'error');
-                    }
-                    return false;
-                }).catch(() => {
-                    document.getElementById('status').innerText = '🔴 登录出错，请尝试更新 JSESSIONID';
-                    if (positive) {
-                        showDialog('错误', `登录失败：服务器返回状态码 ${response.status}`, 'error');
-                    }
-                    return false;
-                });
-            }
-        })
-        .catch(error => {
-            document.getElementById('status').innerText = '🔴 登录出错';
-            if (positive) {
-                showDialog('错误', `登录失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/gdut-course-grabber/issues/new`, 'error');
-            }
-            console.error('登录失败:', error);
-            return false;
-        })
-        .finally(() => {
-            saveBtn.disabled = false;
-            loadingIndicator.classList.add('hidden');
-        });
-}
-
 function flushCoursesTable() {
     document.getElementById('content-table-body').innerHTML = '';
     globalCurrentPage.innerText = '0';
     globalCurrentCount.innerText = '0';
     displayedCourseIdsInTable.clear();
     globalLoadedCourses = []; // 清空已加载课程列表
+    globalCourseListLoaded = false;
     loadMoreCourses();
 }
 
@@ -265,17 +190,16 @@ function onCustomPageSizeChecked() {
     document.getElementById('custom-page-size-btn').classList.remove('hidden');
 }
 
-async function fetchNewCourses(page = 1, size = 20, positive = true) {
+async function fetchNewCourses(page = 1, size = 20, positive = true, username = globalCurrentUsername) {
     globalLoading.setAttribute('showed', 'true');
 
-    if (!globalLoggedIn || await getData('userSessionId') == null) {
-        showToast('请先登录后再进行操作', 'error');
+    if (!globalLoggedIn || !username) {
+        showToast('请先选择账号后再进行操作', 'error');
         globalLoading.setAttribute('showed', 'false');
         return Promise.resolve(false);
     }
-    const cookie = await getData('userSessionId');
 
-    return fetch(`/api/eas/courses?count=${size}&page=${page}&session_id=${cookie}`, {
+    return fetch(`/api/eas/courses?count=${size}&page=${page}&username=${encodeURIComponent(username)}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -317,10 +241,23 @@ async function fetchNewCourses(page = 1, size = 20, positive = true) {
 function loadMoreCourses() {
     const currentPage = Number(globalCurrentPage.innerText);
     const newPage = currentPage + 1;
+    const username = globalCurrentUsername;
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    const loadingIndicator = document.getElementById('load-more-btn-loading');
+    const tableLoadingContainer = document.getElementById('course-table-loading-container');
+    const emptyMessage = document.getElementById('content-no-content-tip');
+    loadMoreBtn.setAttribute('disabled', 'true');
+    loadingIndicator.classList.remove('hidden');
+    tableLoadingContainer.classList.remove('hidden');
+    emptyMessage.classList.add('hidden');
 
-    fetchNewCourses(newPage, globalPageSize, true)
+    return fetchNewCourses(newPage, globalPageSize, true, username)
         .then(coursesData => {
+            if (username !== globalCurrentUsername) {
+                return;
+            }
             if (coursesData && Array.isArray(coursesData)) {
+                globalCourseListLoaded = true;
                 let newCoursesAddedCount = 0;
                 coursesData.forEach(course => {
                     if (course && typeof course.id !== 'undefined') {
@@ -351,10 +288,19 @@ function loadMoreCourses() {
                 } else if (newPage > 1) {
                     showToast('没有更多新的课程了，已经加载完所有课程', 'info');
                 }
+
+                if (globalLoadedCourses.length === 0) {
+                    emptyMessage.classList.remove('hidden');
+                }
             } else if (coursesData === false) {
             } else {
                 console.warn('loadMoreCourses: 未获取到新的课程数据或数据格式不正确 Data received:', coursesData);
             }
+        })
+        .finally(() => {
+            loadMoreBtn.removeAttribute('disabled');
+            loadingIndicator.classList.add('hidden');
+            tableLoadingContainer.classList.add('hidden');
         });
 }
 
@@ -456,14 +402,14 @@ function formatWeeksArrayToDisplayString(weeks) {
     return weekStr || "未知";
 }
 
-async function fetchCourseDetail(classId, positive = true) {
-    if (!globalLoggedIn || !await getData('userSessionId')) {
-        showToast('请先登录后再进行操作', 'error');
+async function fetchCourseDetail(classId, positive = true, username = globalCurrentUsername) {
+    if (!username) {
+        showToast('请先选择账号后再进行操作', 'error');
         return Promise.resolve(false);
     }
     globalLoading.setAttribute('showed', 'true');
 
-    return fetch("/api/eas/courses/" + classId + "/lessons?session_id=" + await getData('userSessionId'), {
+    return fetch("/api/eas/courses/" + classId + "/lessons?username=" + encodeURIComponent(username), {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -561,13 +507,13 @@ async function fetchCourseDetail(classId, positive = true) {
         });
 }
 
-function showCourseDetail(classId) {
-    fetchCourseDetail(classId, true);
+function showCourseDetail(classId, username = globalCurrentUsername) {
+    fetchCourseDetail(classId, true, username);
 }
 
 async function addCourse(classId, courseRawData) {
-    if (!globalLoggedIn || !await getData('userSessionId')) {
-        showToast('请先登录后再进行操作', 'error');
+    if (!globalLoggedIn || !globalCurrentUsername) {
+        showToast('请先选择账号后再进行操作', 'error');
         return;
     }
 
@@ -742,19 +688,33 @@ async function addTask() {
         showToast('课程列表为空，请先添加课程', 'error');
         return;
     }
-    if (!globalLoggedIn || !await getData('userSessionId')) {
-        showToast('请先登录后再进行操作', 'error');
+    if (!globalLoggedIn || !globalCurrentUsername) {
+        showToast('请先选择账号后再进行操作', 'error');
         return;
     }
+
     const startTimeValue = document.getElementById('task-start-time').value.trim();
     if (startTimeValue === '' || verifyTimeFormat(startTimeValue) === false) {
-        showToast('任务开始时间格式不正确，请按照 YYYY-MM-DD HH:mm:SS 的格式填写，例如 2025-09-01 12:00:00', 'error');
+        showToast('任务开始时间格式不正确，请按照 YYYY-MM-DD HH:mm:SS 的格式填写，例如 2026-09-01 12:00:00', 'error');
         return;
     }
-    const cookie = await getData('userSessionId');
+
+    const startTime = new Date(startTimeValue.replace(' ', 'T'));
+    if (Number.isNaN(startTime.getTime())) {
+        showToast('任务开始时间无效，请检查日期和时间', 'error');
+        return;
+    }
+
+    const delayInput = document.getElementById('task-delay');
+    const delay = Number(delayInput.value || 0.5);
+    if (Number.isNaN(delay) || delay < 0.5) {
+        showToast('抢课延迟不能小于 0.5 秒！', 'error');
+        return;
+    }
 
     const priorityModeSwitch = document.getElementById('task-priority-mode-switch');
-
+    const addTaskBtn = document.getElementById('add-task-btn');
+    const addTaskBtnLoading = document.getElementById('add-task-btn-loading');
     const coursesForPayload = globalCourses.map(course => {
         return {
             id: Number(course.id),
@@ -768,63 +728,47 @@ async function addTask() {
         };
     });
 
-    if (document.getElementById('task-delay').value && document.getElementById('task-delay').value < 0.5) {
-        showToast('抢课延迟不能小于 0.5 秒！', 'error');
-        return;
-    }
-    if (!document.getElementById('task-delay').value) {
-        showToast('抢课延迟为空，已使用默认值 0.5 秒');
-    }
-
     const taskData = {
-        account: {
-            session_id: cookie,
-        },
+        username: globalCurrentUsername,
         config: {
-            delay: "PT" + (
-                (document.getElementById('task-delay').value && document.getElementById('task-delay').value >= 0.5) ?
-                document.getElementById('task-delay').value : "0.5"
-            ) + "S",
+            delay: `PT${delay}S`,
             retry: document.getElementById('task-auto-retry-switch').checked,
             priority_mode: priorityModeSwitch ? priorityModeSwitch.checked : false,
-            start_at: startTimeValue ? new Date(startTimeValue).toISOString() : new Date().toISOString(),
+            start_at: startTime.toISOString(),
         },
         courses: coursesForPayload,
     };
 
+    addTaskBtn.setAttribute('disabled', 'true');
+    addTaskBtnLoading.classList.remove('hidden');
     globalLoading.setAttribute('showed', 'true');
-    fetch("/api/grabber", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(taskData)
-    }).then(response => {
-        if (response.ok) {
-            return response.json().then(data => {
-                let taskIdMessage = '';
-                if (data && data.data && data.data.task_id) {
-                    taskIdMessage = ` (ID: ${data.data.task_id})`;
-                } else if (data && data.task_id) {
-                    taskIdMessage = ` (ID: ${data.task_id})`;
-                }
-                showToast(`抢课任务添加成功${taskIdMessage}，请注意查看任务列表`, 'success');
-                flushTaskTable();
-            });
-        } else {
-            return response.json().then(err => {
-                showToast(`抢课任务添加失败: ${err.message || response.statusText}`, 'error');
-            }).catch(() => {
-                showDialog('错误', `抢课任务添加失败，服务器返回状态码: ${response.status}，请稍后重试或查看控制台`, 'error');
-            });
+
+    try {
+        const response = await fetch("/api/grabber/", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(taskData)
+        });
+        const responseData = await response.json().catch(() => null);
+
+        if (!response.ok || (responseData && responseData.error)) {
+            const errorMessage = responseData?.message || response.statusText || `服务器返回状态码 ${response.status}`;
+            showToast(`抢课任务添加失败: ${errorMessage}`, 'error');
+            return;
         }
-    }).catch(error => {
+
+        showToast('抢课任务添加成功，请注意查看任务列表', 'success');
+        await flushTaskTable();
+    } catch (error) {
         console.error('添加抢课任务失败:', error);
         showDialog('错误', `添加抢课任务失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/gdut-course-grabber/issues/new`, 'error');
-    }).finally(() => {
+    } finally {
+        addTaskBtn.removeAttribute('disabled');
+        addTaskBtnLoading.classList.add('hidden');
         globalLoading.setAttribute('showed', 'false');
-        flushTaskTable();
-    });
+    }
 }
 
 async function getTasks() {
@@ -861,6 +805,73 @@ async function getTaskStatus(taskId) {
     }
 }
 
+function updateTaskStatusElements(taskRow, statusValue) {
+    const taskId = taskRow.getAttribute('task-id');
+    const statusText = TASK_STATUS_MAP[statusValue] || '未知';
+    const statusCell = taskRow.querySelector('[task-status]');
+    const toggleBtn = taskRow.querySelector('[task-toggle]');
+
+    if (statusCell && statusCell.innerText !== statusText) {
+        statusCell.innerText = statusText;
+    }
+    if (!toggleBtn) {
+        return;
+    }
+
+    let buttonText = '状态未知';
+    let buttonAction = '';
+    let disabled = true;
+    if (statusValue === 1 || statusValue === 2) {
+        buttonText = '停止';
+        buttonAction = `stopTask('${taskId}')`;
+        disabled = false;
+    } else if (statusValue === 0) {
+        buttonText = '启动';
+        buttonAction = `startTask('${taskId}')`;
+        disabled = false;
+    }
+
+    if (toggleBtn.innerText !== buttonText) {
+        toggleBtn.innerText = buttonText;
+    }
+    if (buttonAction && toggleBtn.getAttribute('onclick') !== buttonAction) {
+        toggleBtn.setAttribute('onclick', buttonAction);
+    } else if (!buttonAction && toggleBtn.hasAttribute('onclick')) {
+        toggleBtn.removeAttribute('onclick');
+    }
+    if (disabled) {
+        if (!toggleBtn.hasAttribute('disabled')) {
+            toggleBtn.setAttribute('disabled', 'true');
+        }
+    } else if (toggleBtn.hasAttribute('disabled')) {
+        toggleBtn.removeAttribute('disabled');
+    }
+}
+
+async function refreshTaskStatuses() {
+    if (globalTaskStatusRefreshing) {
+        return;
+    }
+
+    const taskRows = Array.from(document.querySelectorAll('#task-table-body s-tr[task-id]'));
+    if (taskRows.length === 0) {
+        return;
+    }
+
+    globalTaskStatusRefreshing = true;
+    try {
+        await Promise.all(taskRows.map(async taskRow => {
+            const taskId = taskRow.getAttribute('task-id');
+            const statusValue = await getTaskStatus(taskId);
+            if (statusValue !== null && taskRow.isConnected) {
+                updateTaskStatusElements(taskRow, statusValue);
+            }
+        }));
+    } finally {
+        globalTaskStatusRefreshing = false;
+    }
+}
+
 async function flushTaskTable() {
     const flushTaskTableBtn = document.getElementById('flush-task-table-btn');
     const flushTaskTableIndicator = document.getElementById('flush-task-table-indicator');
@@ -871,7 +882,7 @@ async function flushTaskTable() {
     const table_body = document.getElementById('task-table-body');
     const empty_message = document.getElementById('task-empty-tip');
 
-
+    if (empty_message) empty_message.classList.add('hidden');
     table_body.innerHTML = '';
 
     if (!tasksData || !tasksData.data || tasksData.data.length === 0) {
@@ -887,9 +898,9 @@ async function flushTaskTable() {
 
     for (const task of tasksData.data) {
         const taskId = task.key;
-        const session_id = task.value.account.session_id;
+        const username = task.value.username || '未知账号';
         const coursesInTask = task.value.courses;
-        const start_time = new Date(task.value.config.start_at).toLocaleString();
+        const start_time = task.value.config.start_at ? new Date(task.value.config.start_at).toLocaleString() : '立即开始';
         const delay = task.value.config.delay;
         const retry = task.value.config.retry ? '开启' : '关闭';
 
@@ -914,8 +925,10 @@ async function flushTaskTable() {
                 course_tag.innerText = displayInfo;
                 course_tag.setAttribute('type', 'outlined');
                 if (actualId) {
+                    course_tag.setAttribute('clickable', 'true');
                     course_tag.setAttribute('classId', actualId);
-                    course_tag.setAttribute('onclick', "showCourseDetail(this.getAttribute('classId')); setTimeout(() => this.removeAttribute('checked'), 0);");
+                    course_tag.setAttribute('account-name', username);
+                    course_tag.setAttribute('onclick', "showCourseDetail(this.getAttribute('classId'), this.getAttribute('account-name')); setTimeout(() => this.removeAttribute('checked'), 0);");
                 }
                 course_tags_td.appendChild(course_tag);
                 course_tags_td.appendChild(document.createElement('br'));
@@ -925,13 +938,17 @@ async function flushTaskTable() {
         const operation_td = document.createElement('s-td');
         operation_td.style.alignContent = 'center';
         const toggle_btn = document.createElement('s-button');
+        toggle_btn.setAttribute('task-toggle', '');
 
-        if (statusValue === 1 | statusValue === 2) {
+        if (statusValue === 1 || statusValue === 2) {
             toggle_btn.innerText = '停止';
             toggle_btn.setAttribute('onclick', `stopTask('${taskId}')`);
         } else if (statusValue === 0) {
             toggle_btn.innerText = '启动';
             toggle_btn.setAttribute('onclick', `startTask('${taskId}')`);
+        } else {
+            toggle_btn.innerText = '状态未知';
+            toggle_btn.setAttribute('disabled', 'true');
         }
         toggle_btn.style.marginRight = '8px';
 
@@ -945,14 +962,15 @@ async function flushTaskTable() {
         operation_td.appendChild(remove_task_btn);
 
         const table_line = document.createElement('s-tr');
+        table_line.setAttribute('task-id', String(taskId));
 
         const task_id_td = document.createElement('s-td');
         task_id_td.style.alignContent = 'center';
         table_line.appendChild(task_id_td).innerText = taskId;
 
-        const session_id_td = document.createElement('s-td');
-        session_id_td.style.alignContent = 'center';
-        table_line.appendChild(session_id_td).innerText = session_id;
+        const username_td = document.createElement('s-td');
+        username_td.style.alignContent = 'center';
+        table_line.appendChild(username_td).innerText = username;
         table_line.appendChild(course_tags_td);
 
         const start_time_td = document.createElement('s-td');
@@ -973,6 +991,7 @@ async function flushTaskTable() {
         table_line.appendChild(retry_td).innerText = retry;
 
         const status_text_td = document.createElement('s-td');
+        status_text_td.setAttribute('task-status', '');
         status_text_td.style.alignContent = 'center';
         table_line.appendChild(status_text_td).innerText = statusText;
 
@@ -988,41 +1007,40 @@ async function flushTaskTable() {
 
 async function startTask(taskId) {
     globalLoading.setAttribute('showed', 'true');
-    fetch(`/api/grabber/${taskId}/start`, { method: 'GET' }).then(response => {
-        if (response.ok) {
+    fetch(`/api/grabber/${taskId}/start`, { method: 'GET' }).then(async response => {
+        const responseData = await response.json().catch(() => null);
+        if (response.ok && responseData?.data === true) {
             showToast(`任务 ${taskId} 已成功启动`, 'success');
+        } else if (response.ok) {
+            showToast(`任务 ${taskId} 已经处于启动状态`, 'info');
         } else {
-            showToast(`启动任务 ${taskId} 失败: ${response.statusText}`, 'error');
+            showToast(`启动任务 ${taskId} 失败: ${responseData?.message || response.statusText}`, 'error');
         }
     }).catch(error => {
         showToast(`启动任务 ${taskId} 失败: ${error.message}`, 'error');
     }).finally(() => {
-        flushTaskTable();
+        refreshTaskStatuses();
         globalLoading.setAttribute('showed', 'false');
     });
 }
 
 async function stopTask(taskId) {
     globalLoading.setAttribute('showed', 'true');
-    fetch(`/api/grabber/${taskId}/cancel`, { method: 'GET' }).then(response => {
-        if (response.ok) {
+    fetch(`/api/grabber/${taskId}/cancel`, { method: 'GET' }).then(async response => {
+        const responseData = await response.json().catch(() => null);
+        if (response.ok && responseData?.data === true) {
             showToast(`任务 ${taskId} 已成功停止`, 'success');
+        } else if (response.ok) {
+            showToast(`任务 ${taskId} 当前没有在运行`, 'info');
         } else {
-            showToast(`停止任务 ${taskId} 失败: ${response.statusText}`, 'error');
+            showToast(`停止任务 ${taskId} 失败: ${responseData?.message || response.statusText}`, 'error');
         }
+    }).catch(error => {
+        showToast(`停止任务 ${taskId} 失败: ${error.message}`, 'error');
     }).finally(() => {
-        flushTaskTable();
+        refreshTaskStatuses();
         globalLoading.setAttribute('showed', 'false');
     });
-}
-
-function syncSessionId() {
-    const cookieField = document.getElementById('cookie');
-    const sessionId = cookieField.value.trim();
-    const taskSessionIdField = document.getElementById('task-sessionid');
-    if (taskSessionIdField) {
-        taskSessionIdField.value = sessionId;
-    }
 }
 
 function verifyTimeFormat(timeString) {
@@ -1114,7 +1132,7 @@ function toggleAutoRefreshTaskTable() {
         }, 100);
 
         globalAutoRefreshTask = setInterval(() => {
-            flushTaskTable();
+            refreshTaskStatuses();
 
             currentIndicatorSteps = 0;
             refreshIndicator.value = 0;
@@ -1277,9 +1295,14 @@ async function searchCourses() {
     //         courseCategory.includes(searchTerm);
     // });
 
-    const sessionId = await getData('userSessionId') || '';
+    if (!globalLoggedIn || !globalCurrentUsername) {
+        showToast('请先选择账号后再进行操作', 'error');
+        indicator.classList.add('hidden');
+        return;
+    }
+
     fetch(
-        `/api/eas/courses?count=${1000}&page=1&keyword=${encodeURIComponent(searchTerm)}&session_id=${encodeURIComponent(sessionId || '')}`,
+        `/api/eas/courses?count=${1000}&page=1&keyword=${encodeURIComponent(searchTerm)}&username=${encodeURIComponent(globalCurrentUsername)}`,
     ).then(response => {
         if (response.ok) {
             // 填充课程数据到表格
@@ -1326,11 +1349,130 @@ function onDelayChange(element) {
     }
 }
 
+function onAccountChipClicked(element) {
+    const container = document.getElementById("account-added-container")
+    const chips = container.querySelectorAll("s-chip")
+    if (!element.checked) {
+        chips.forEach((chip) => {
+            if (chip != element) {
+                chip.setAttribute("checked", false) // 清理其他选项的选中状态
+            }
+        })
+        globalCurrentUsername = element.getAttribute("account-name")
+        globalLoggedIn = true
+        document.getElementById("task-account").value = globalCurrentUsername
+        document.getElementById('content-no-content-tip').classList.add('hidden')
+        if (!globalCourseListLoaded) {
+            flushCoursesTable()
+        }
+    } else {
+        globalCurrentUsername = ""
+        globalLoggedIn = false
+        document.getElementById("task-account").value = "未选择，请先到课程列表页面选择账号"
+    }
+}
+
+async function getAccountList() {
+    fetch("/api/account").then(resp => {
+        if (resp.ok) {
+            resp.json().then(data => {
+                populateAccountChips(data?.data || [])
+            })
+        }
+    })
+}
+
+async function deleteAccount(username) {
+    fetch(`/api/account/?username=${username}`, {
+        method: 'DELETE',
+    }).then(resp => {
+        if (resp.ok) {
+            showToast(`账号 ${username} 已删除`, 'success')
+            getAccountList()
+        } else {
+            resp.json().then(data => {
+                showToast(`账号删除失败: ${data.message || resp.statusText}`, "error")
+            }).catch(() => {
+                showToast(`账号删除失败: ${resp.statusText}`, "error")
+            })
+        }
+    })
+}
+
+function populateAccountChips(accounts) {
+    const container = document.getElementById("account-added-container")
+    // 清理所有 s-chip
+    container.querySelectorAll("s-chip").forEach((chip) => {
+        chip.remove()
+    })
+    const accountTips = document.getElementById("account-added-container-tips")
+    accountTips.style.display = accounts.length > 0 ? 'none' : ''
+
+    if (!accounts.some((account) => account.username === globalCurrentUsername)) {
+        globalCurrentUsername = ""
+        globalLoggedIn = false
+        document.getElementById("task-account").value = "未选择，请先到课程列表页面选择账号"
+    }
+
+    accounts.forEach((account) => {
+        chip = `<s-chip account-name="${account.username}" clickable="true" onclick="onAccountChipClicked(this)">
+                    <s-icon slot="start">
+                    <svg t="1784795594199" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3946" width="200" height="200"><path d="M515.131392 563.202048c155.492352 0 281.544704-126.075904 281.544704-281.544704 0-155.492352-126.053376-281.544704-281.544704-281.544704-155.497472 0-281.547776 126.052352-281.547776 281.544704C233.58464 437.126144 359.634944 563.202048 515.131392 563.202048zM643.106816 359.1424c0 0-6.398976 101.680128-131.175424 101.680128-124.777472 0-124.777472-101.680128-124.777472-101.680128L643.106816 359.1424zM515.131392 614.391808c-332.112896 0-409.522176 170.066944-409.522176 409.496576l819.04128 0C924.650496 783.058944 848.638976 614.391808 515.131392 614.391808z" fill="#231815" p-id="3947"></path></svg>
+                    </s-icon>
+                    <s-icon-button slot="action" onclick="event.stopPropagation(); deleteAccount('${account.username}')">
+                        <s-icon name="close"></s-icon>
+                    </s-icon-button>
+                    ${account.username}
+                </s-chip>`
+        container.insertAdjacentHTML('beforeend', chip)
+    })
+}
+
+function addAccount() {
+    const accountInput = document.getElementById("username-input")
+    const accountName = accountInput.value.trim()
+    const passwordInput = document.getElementById("password-input")
+    const password = passwordInput.value.trim()
+    const addAccountBtn = document.getElementById("add-account-btn")
+    const addAccountBtnLoading = document.getElementById("add-account-btn-loading")
+    addAccountBtn.setAttribute("disabled", "true")
+    addAccountBtnLoading.classList.remove("hidden")
+    if (accountName === "") {
+        showToast("账号名称不能为空", "error")
+        addAccountBtn.removeAttribute("disabled")
+        addAccountBtnLoading.classList.add("hidden")
+        return
+    }
+    fetch("/api/account", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username: accountName, password: password })
+    }).then(resp => {
+        if (resp.ok) {
+            showToast("账号添加成功", "success")
+            accountInput.value = ""
+            passwordInput.value = ""
+            getAccountList()
+        } else {
+            resp.json().then(data => {
+                showToast(`账号添加失败: ${data.message || resp.statusText}`, "error")
+            }).catch(() => {
+                showToast(`账号添加失败: ${resp.statusText}`, "error")
+            })
+        }
+    }).catch(error => {
+        console.error("添加账号失败:", error)
+        showToast(`添加账号失败: ${error.message || error}`, "error")
+    })
+        .finally(() => {
+            addAccountBtn.removeAttribute("disabled")
+            addAccountBtnLoading.classList.add("hidden")
+        })
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     initialize();
-    changeAccentColor();
-    const cookieInput = document.getElementById('cookie');
-    if (cookieInput) {
-        cookieInput.addEventListener('input', syncSessionId);
-    }
 });

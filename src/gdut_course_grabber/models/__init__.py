@@ -127,9 +127,14 @@ class Account(BaseModel):
     帐户。
     """
 
-    session_id: str
+    username: str
     """
-    会话 ID。
+    用户名。 
+    """
+
+    password: str
+    """
+    密码。
     """
 
 
@@ -180,9 +185,9 @@ class GrabberTask(BaseModel):
     抢课任务。
     """
 
-    account: Account
+    username: str
     """
-    用于执行抢课操作的帐户。
+    用于执行抢课操作的帐户用户名。
     """
 
     config: GrabberConfig = GrabberConfig()
