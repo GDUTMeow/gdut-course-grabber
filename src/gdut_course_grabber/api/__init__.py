@@ -6,8 +6,14 @@ from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-
-from gdut_course_grabber.api.exc import ApiException, unexpected_error, validation_error
+from gdut_course_grabber.api.exc import (
+    ApiException,
+    authorization_error,
+    unexpected_error,
+    validation_error,
+)
+from gdut_course_grabber.utils.eas import AuthorizationFailed
+from gduter.exception import AcademicLoginError, LoginError
 
 from . import account, eas, grabber, storage
 
@@ -42,10 +48,24 @@ async def global_exception_handler(_: Request, exc: Exception) -> JSONResponse:
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_error_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_error_handler(
+    _: Request, exc: RequestValidationError
+) -> JSONResponse:
     """
     处理校验错误。
     """
 
     exception = validation_error(exc)
+    return JSONResponse(jsonable_encoder(exception.inner), exception.status_code)
+
+
+@app.exception_handler(AuthorizationFailed)
+@app.exception_handler(LoginError)
+@app.exception_handler(AcademicLoginError)
+async def authorization_error_handler(_: Request, exc: Exception) -> JSONResponse:
+    """
+    处理认证错误。
+    """
+
+    exception = authorization_error(exc)
     return JSONResponse(jsonable_encoder(exception.inner), exception.status_code)

@@ -28,6 +28,11 @@ class ErrorKind(StrEnum):
     未找到指定实体。
     """
 
+    AUTHORIZATION = auto()
+    """
+    认证错误。
+    """
+
 
 class ApiResponse[T](BaseModel):
     """
