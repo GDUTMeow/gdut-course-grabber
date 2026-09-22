@@ -64,6 +64,22 @@ def unexpected_error(exc: Exception) -> ApiException[None]:
     return ApiException(response, 500)
 
 
+def authorization_error(exc: Exception) -> ApiException[None]:
+    """
+    认证错误。
+
+    Args:
+        exc (Exception): 异常。
+
+    Returns:
+        ApiException[None]: 含有异常消息的 API 异常。
+    """
+
+    message = _exception_to_str(exc)
+    response = ApiResponse(error=ErrorKind.AUTHORIZATION, message=message, data=None)
+    return ApiException(response, 400)
+
+
 def validation_error(exc: RequestValidationError) -> ApiException[ValidationError]:
     """
     校验错误。
