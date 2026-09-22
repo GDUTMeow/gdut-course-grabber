@@ -48,9 +48,9 @@ class Grabber:
     抢课工具。
     """
 
-    account: Account
+    client: EasClient
     """
-    用于执行抢课任务的帐户。
+    教务系统客户端。
     """
 
     config: GrabberConfig
@@ -91,7 +91,7 @@ class Grabber:
 
     def __init__(
         self,
-        account: Account,
+        client: EasClient,
         config: GrabberConfig,
         courses: Iterable[Course],
     ) -> None:
@@ -99,12 +99,12 @@ class Grabber:
         初始化 `Grabber`。
 
         Args:
-            account (Account): 用于执行抢课任务的帐户。
+            client (EasClient): 教务系统客户端。
             config (GrabberConfig): 抢课工具配置。
             courses (Iterable[Course]): 待抢课课程列表。
         """
 
-        self.account = account
+        self.client = client
 
         self._queue = list(courses)
         self.config = config
@@ -134,36 +134,33 @@ class Grabber:
         执行选课操作。
         """
 
-        async with EasClient(self.account) as client:
-            for course in self._queue.copy():
-                completed = True
+        for course in self._queue.copy():
+            completed = True
 
-                try:
-                    await client.select_course(course)
-                    logger.info("grab course %s (%d) successfully.", course.name, course.id)
+            try:
+                await self.client.select_course(course)
+                logger.info("grab course %s (%d) successfully.", course.name, course.id)
 
-                except (AuthorizationFailed, RequirementExceeded, VerifyNeeded):
-                    raise
+            except (AuthorizationFailed, RequirementExceeded, VerifyNeeded):
+                raise
 
-                except (AlreadySelected, CourseIsFull, CourseConflict) as ex:
-                    logger.warning("skipped course %s (%d): %s", course.name, course.id, repr(ex))
+            except (AlreadySelected, CourseIsFull, CourseConflict) as ex:
+                logger.warning("skipped course %s (%d): %s", course.name, course.id, repr(ex))
 
-                except Exception as ex:
-                    logger.warning(
-                        "grab course %s (%d) failed: %s", course.name, course.id, repr(ex)
-                    )
+            except Exception as ex:
+                logger.warning("grab course %s (%d) failed: %s", course.name, course.id, repr(ex))
 
-                    if self.config.retry:
-                        completed = False
+                if self.config.retry:
+                    completed = False
 
-                finally:
-                    await asyncio.sleep(self.config.delay.total_seconds())
+            finally:
+                await asyncio.sleep(self.config.delay.total_seconds())
 
-                if completed:
-                    self._queue.remove(course)
+            if completed:
+                self._queue.remove(course)
 
-                if self.config.priority_mode:
-                    break
+            if self.config.priority_mode:
+                break
 
     async def _worker(self) -> None:
         """

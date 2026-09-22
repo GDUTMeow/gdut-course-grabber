@@ -91,7 +91,7 @@ class Lesson(BaseModel):
     授课周次。
     """
 
-    day: int
+    day: int | None = None
     """
     授课星期数。
     """
@@ -116,7 +116,7 @@ class Lesson(BaseModel):
     授课老师。
     """
 
-    sessions: list[int]
+    sessions: list[int] = []
     """
     节次。
     """
@@ -127,9 +127,14 @@ class Account(BaseModel):
     帐户。
     """
 
-    session_id: str
+    username: str
     """
-    会话 ID。
+    用户名。 
+    """
+
+    password: str
+    """
+    密码。
     """
 
 
@@ -180,9 +185,9 @@ class GrabberTask(BaseModel):
     抢课任务。
     """
 
-    account: Account
+    username: str
     """
-    用于执行抢课操作的帐户。
+    用于执行抢课操作的帐户用户名。
     """
 
     config: GrabberConfig = GrabberConfig()
