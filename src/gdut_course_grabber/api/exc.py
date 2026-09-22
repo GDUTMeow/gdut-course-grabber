@@ -3,7 +3,6 @@
 """
 
 from fastapi.exceptions import RequestValidationError
-
 from gdut_course_grabber.api.types import (
     ApiResponse,
     EntityNotFound,
@@ -40,6 +39,15 @@ class ApiException[T](Exception):
         self.status_code = status_code
 
 
+def _exception_to_str(exc: Exception) -> str:
+    exc_name = type(exc).__qualname__
+    message = getattr(exc, "message", None) or str(exc)
+    if message:
+        return f"{exc_name}: {message}"
+    else:
+        return exc_name
+
+
 def unexpected_error(exc: Exception) -> ApiException[None]:
     """
     非预期错误。
@@ -51,8 +59,7 @@ def unexpected_error(exc: Exception) -> ApiException[None]:
         ApiException[None]: 含有异常消息的 API 异常。
     """
 
-    message = getattr(exc, "message", None) or str(exc)
-    message = f"{type(exc).__qualname__}: {message}"
+    message = _exception_to_str(exc)
     response = ApiResponse(error=ErrorKind.UNEXPECTED, message=message, data=None)
     return ApiException(response, 500)
 
@@ -69,7 +76,9 @@ def validation_error(exc: RequestValidationError) -> ApiException[ValidationErro
     """
 
     error = ValidationError(body=exc.body, errors=exc.errors())
-    response = ApiResponse(error=ErrorKind.VALIDATION, message="validation failed.", data=error)
+    response = ApiResponse(
+        error=ErrorKind.VALIDATION, message="validation failed.", data=error
+    )
     return ApiException(response, 400)
 
 
@@ -86,5 +95,7 @@ def entity_not_found_error[T](request: T) -> ApiException[EntityNotFound[T]]:
 
     message = f"entity `{request}` not found."
     error = EntityNotFound(request=request)
-    response = ApiResponse(error=ErrorKind.ENTITY_NOT_FOUND, message=message, data=error)
+    response = ApiResponse(
+        error=ErrorKind.ENTITY_NOT_FOUND, message=message, data=error
+    )
     return ApiException(response, 404)
