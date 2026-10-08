@@ -209,11 +209,11 @@ async function fetchNewCourses(page = 1, size = 20, positive = true, username = 
             if (response.ok) {
                 return response.json();
             } else {
-                return response.json().then(errorData => {
-                    const errorMessage = errorData.message || `服务器返回错误状态码: ${response.status}.`;
-                    throw new Error(errorMessage);
-                }).catch(() => {
+                return response.json().catch(() => {
                     throw new Error(`获取课程列表失败，服务器返回状态码: ${response.status}`);
+                }).then(errorData => {
+                    const errorMessage = errorData?.message || `服务器返回错误状态码: ${response.status}.`;
+                    throw new Error(errorMessage);
                 });
             }
         })
