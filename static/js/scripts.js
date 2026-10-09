@@ -205,41 +205,22 @@ async function fetchNewCourses(page = 1, size = 20, positive = true, username = 
             'Content-Type': 'application/json',
         },
     })
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
-                return response.json().catch(() => {
-                    throw new Error(`获取课程列表失败，服务器返回状态码: ${response.status}`);
-                }).then(errorData => {
-                    const errorMessage = errorData?.message || `服务器返回错误状态码: ${response.status}.`;
-                    throw new Error(errorMessage);
-                });
-            }
-        })
-        .then(resp => {
-            if (resp.error === "authorization") {
-                showDialog('错误', '提供的用户名可能不存在或密码错误，请检查登录凭据', 'error');
-                return false;
-            }
-            if (resp.error && resp.error !== "ok" && resp.error !== "unexpected") {
-                if (resp.message) {
-                    showDialog('提示', resp.message, 'info');
-                } else {
-                    showDialog('错误', '获取课程列表时服务器返回未知错误', 'error');
-                }
-                return (resp.data && Array.isArray(resp.data)) ? resp.data : [];
-            }
-            return resp.data || [];
-        })
-        .catch(error => {
-            showDialog('错误', `获取课程列表失败，请稍后重试或查看控制台\n${error.message || error}\n如果出现了严重的错误，可以考虑开个 issue: https://github.com/GDUTMeow/gdut-course-grabber/issues/new`, 'error');
-            console.error('获取课程失败:', error);
-            return false;
-        })
-        .finally(() => {
-            globalLoading.setAttribute('showed', 'false');
-        });
+    .then(async response => {
+        const data = await response.json();
+        if (response.ok) {
+            return data.data;
+        }
+        const error = data.error;
+        const message = data.message;
+        if (error == 'authorization') {
+            showDialog("认证失败", message, 'error')
+        } else {
+            showDialog("错误", message, 'error')
+        }
+    })
+    .finally(() => {
+        globalLoading.setAttribute('showed', 'false');
+    });
 }
 
 function loadMoreCourses() {
