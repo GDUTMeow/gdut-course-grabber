@@ -1347,9 +1347,7 @@ function onAccountChipClicked(element) {
         globalLoggedIn = true
         document.getElementById("task-account").value = globalCurrentUsername
         document.getElementById('content-no-content-tip').classList.add('hidden')
-        if (!globalCourseListLoaded) {
-            flushCoursesTable()
-        }
+        flushCoursesTable()
     } else {
         globalCurrentUsername = ""
         globalLoggedIn = false
